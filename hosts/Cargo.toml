@@ -15,3 +15,4 @@ quicli = "0.4"
 structopt = "0.3.9"
 natsclient = "0.0.6"
 wasmdome-protocol = { path = "../protocol" }
+domaincommon = { path = "../domaincommon" }

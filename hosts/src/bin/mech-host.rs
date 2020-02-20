@@ -37,7 +37,7 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
     let client = Client::from_options(opts)?;
     client.connect()?;
     let c = client.clone();
-    client.subscribe("wasmdome.matches.*.scheduleactor", move |msg| {        
+    client.queue_subscribe("wasmdome.matches.*.scheduleactor", "mech-host", move |msg| {        
         let schedule_req: protocol::commands::ScheduleActor = 
             serde_json::from_slice(&msg.payload).unwrap();
         info!("Received actor schedule request [{:?}].",
@@ -53,6 +53,25 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
             &serde_json::to_vec(&scheduled).unwrap(),
             None
         ).unwrap();
+        Ok(())
+    })?;
+
+    let c2 = client.clone();
+    // This is a hack for now. the actors will subscribe to their turns list
+    client.subscribe("wasmdome.matches.*.turns.*", move |msg| {
+        let turn: protocol::commands::TakeTurn =
+            serde_json::from_slice(&msg.payload).unwrap();
+        info!("Received take turn command [{:?}]", turn);
+        let ack = protocol::events::MatchEvent::TurnRequested {
+            actor: turn.actor.to_string(),
+            match_id: turn.match_id.to_string(),
+            turn: turn.turn,
+            commands: vec![
+                domaincommon::commands::MechCommand::Move{mech: turn.actor.to_string(), direction: domaincommon::GridDirection::North}
+            ]
+        };
+        let subject = format!("wasmdome.match_events.{}", turn.match_id);
+        c2.publish(&subject, &serde_json::to_vec(&ack).unwrap(), None)?;
         Ok(())
     })?;
     //host::add_actor(Actor::from_file(cmd.coordinator_path)?)?;    

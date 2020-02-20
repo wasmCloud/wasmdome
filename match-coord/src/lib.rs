@@ -84,11 +84,26 @@ fn spawn_actor(
 
 /// Publish MatchStarted event, initiate the "turn loop" for getting commands from actors
 fn start_match(ctx: &CapabilitiesContext, match_id: &str) -> ReceiveResult {
-    let started = protocol::events::MatchEvent::MatchStarted{
+    let started = protocol::events::MatchEvent::MatchStarted {
         match_id: match_id.to_string(),
     };
     let subject = format!("wasmdome.match_events.{}", match_id);
-    ctx.msg().publish(&subject, None, &serde_json::to_vec(&started)?)?;
+    ctx.msg()
+        .publish(&subject, None, &serde_json::to_vec(&started)?)?;
+
+    let state = store::load_state(ctx, match_id)?;
+
+    for actor in state.parameters.actors {
+        let turn_subject = format!("wasmdome.matches.{}.turns.{}", match_id, actor);
+        let turn = protocol::commands::TakeTurn {
+            actor: actor.to_string(),
+            match_id: match_id.to_string(),
+            turn: 0,
+        };
+        ctx
+            .msg()  
+            .publish(&turn_subject, None, &serde_json::to_vec(&turn)?)?;        
+    }
 
     Ok(vec![])
 }
@@ -150,15 +165,7 @@ fn create_match(ctx: &CapabilitiesContext, msg: Vec<u8>, reply_to: &str) -> Rece
             ),
             None,
             &serde_json::to_vec(&sched)?,
-        )?;
-        /*let _res = ctx.msg().request(
-            &format!(
-                "{}.{}.{}",
-                SUBJECT_MATCH_COMMANDS_PREFIX, createmsg.match_id, SUBJECT_SCHEDULE_ACTOR
-            ),
-            &serde_json::to_vec(&sched)?,
-            1000,
-        )?;*/
+        )?;        
     }
     Ok(vec![])
 }

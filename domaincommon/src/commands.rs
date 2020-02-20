@@ -1,6 +1,6 @@
 use crate::{GridDirection, Point};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MechCommand {
     Move {
         mech: String,

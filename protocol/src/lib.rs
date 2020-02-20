@@ -2,22 +2,38 @@
 extern crate serde_derive;
 
 pub mod events {
+    use domaincommon as domain;
+
     pub const SUBJECT_EVENTS_MASK: &str = "wasmdome.match_events.{}";
     pub const SUBJECT_MATCH_EVENTS_PREFIX: &str = "wasmdome.match_events.";
 
     #[derive(Clone, Debug, Serialize, Deserialize)]
-    pub enum MatchEvent {
+    pub enum MatchEvent {        
+        MatchCreated { match_id: String, actors: Vec<String>, board_height: u32, board_width: u32 },
         ActorScheduled { actor: String, match_id: String },
         MatchStarted { match_id: String },
-        MatchCreated { match_id: String, actors: Vec<String>, board_height: u32, board_width: u32 }
+        /// Published in response to a TakeTurn command. The command processor will be listening for this event
+        TurnRequested { actor: String, match_id: String, turn: u32, commands: Vec<domain::commands::MechCommand> }        
     }
-
 }
 
 pub mod commands {
+    
+
     pub const SUBJECT_CREATE_MATCH: &str = "wasmdome.matches.create";
     pub const SUBJECT_MATCH_COMMANDS_PREFIX: &str = "wasmdome.matches";
     pub const SUBJECT_SCHEDULE_ACTOR: &str = "scheduleactor";
+    pub const SUBJECT_TURNS_MASK: &str = "wasmdome.matches.{}.turns.{}";
+
+    /// Sent on a match subject to tell a given mech to take its turn. The response
+    /// to this should be an acknowledgement containing the list of commands performed
+    /// by that mech.
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct TakeTurn {
+        pub actor: String,
+        pub match_id: String,
+        pub turn: u32,
+    }
 
     /// Requests that a given actor be scheduled for a given match (auction style)
     #[derive(Debug, Clone, Serialize, Deserialize)]
