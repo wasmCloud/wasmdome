@@ -1,0 +1,17 @@
+[package]
+name = "hosts"
+version = "0.0.1"
+authors = ["Kevin Hoffman <alothien@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+wascc-host = "0.3.0"
+serde_json = "1.0.48"
+nkeys = "0.0.8"
+serde = "1.0.104"
+log = "0.4.8"
+env_logger = "0.7.1"
+quicli = "0.4"
+structopt = "0.3.9"
+natsclient = "0.0.6"
+wasmdome-protocol = { path = "../protocol" }

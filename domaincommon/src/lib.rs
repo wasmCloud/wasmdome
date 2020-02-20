@@ -3,7 +3,7 @@ extern crate serde_derive;
 
 #[macro_use]
 extern crate eventsourcing_derive;
-extern crate eventsourcing;
+pub extern crate eventsourcing;
 
 pub mod commands;
 pub mod events;
@@ -16,8 +16,8 @@ const DEFAULT_BOARD_WIDTH: u32 = 100;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Point {
-    x: i32,
-    y: i32,
+    pub x: i32,
+    pub y: i32,
 }
 
 impl Point {
@@ -108,8 +108,8 @@ impl Point {
 /// the scene.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameBoard {
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl Default for GameBoard {

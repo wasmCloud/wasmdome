@@ -15,37 +15,67 @@ const PRIMARY_RANGE: usize = 3;
 const SECONDARY_RANGE: usize = 6;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct MatchParameters {
+    pub match_id: String,
+    pub width: u32,
+    pub height: u32,
+    pub actors: Vec<String>,
+}
+
+impl MatchParameters {
+    pub fn new(match_id: String, width: u32, height: u32, actors: Vec<String>) -> Self {
+        MatchParameters {
+            match_id,
+            width,
+            height,
+            actors,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MatchState {
-    mechs: HashMap<String, MechState>,
-    generation: u64,
-    game_board: GameBoard,
+    pub parameters: MatchParameters,
+    pub mechs: HashMap<String, MechState>,
+    pub generation: u64,
+    pub game_board: GameBoard,
 }
 
 impl MatchState {
+    pub fn new_with_parameters(params: MatchParameters) -> MatchState {
+        MatchState{
+            parameters: params.clone(),
+            mechs: HashMap::new(),
+            generation: 0,
+            game_board: GameBoard{
+                height: params.height,
+                width: params.width,
+            }
+        }
+    }
+
     fn modify_mech<F>(state: &MatchState, mech: &str, fun: F) -> MatchState
     where
         F: Fn(MechState) -> MechState,
     {
-        MatchState {
-            mechs: state
-                .mechs
-                .clone()
-                .into_iter()
-                .map(|(key, ms)| {
-                    if key == mech {
-                        (key, fun(ms))
-                    } else {
-                        (key, ms)
-                    }
-                })
-                .collect(),
-            game_board: state.game_board.clone(),
-            generation: state.generation + 1,
-        }
+        let mut state = state.clone();
+        state.mechs = state
+            .mechs
+            .clone()
+            .into_iter()
+            .map(|(key, ms)| {
+                if key == mech {
+                    (key, fun(ms))
+                } else {
+                    (key, ms)
+                }
+            })
+            .collect();
+        state.generation = state.generation + 1;
+        state
     }
 
-    fn mech_at(state: &MatchState, position: &Point) -> Option<MechState> {
-        println!("Checking for mech at {:?}", position);
+    fn mech_at(state: &MatchState, position: &Point) -> Option<MechState> {        
         state
             .mechs
             .values()
@@ -78,11 +108,11 @@ impl AggregateState for MatchState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MechState {
-    id: String,
-    health: u32,
-    position: Point,
-    alive: bool,
-    victor: bool,
+    pub id: String,
+    pub health: u32,
+    pub position: Point,
+    pub alive: bool,
+    pub victor: bool,
 }
 
 impl Default for MechState {
