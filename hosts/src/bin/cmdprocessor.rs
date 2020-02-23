@@ -9,8 +9,8 @@ use wascc_host::{host, Actor, NativeCapability};
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(
     global_settings(&[AppSettings::ColoredHelp, AppSettings::VersionlessSubcommands]),
-    name = "match-coordinator", 
-    about = "Hosts the match coordinator actor for WasmDome")]
+    name = "cmdprocessor", 
+    about = "Processes Mech Turn Commands, Emits Match Events")]
 struct Cli {
     #[structopt(flatten)]
     command: CliCommand,
@@ -18,9 +18,9 @@ struct Cli {
 
 #[derive(Debug, Clone, StructOpt)]
 struct CliCommand {
-    /// Path to the signed WebAssembly module responsible for match coordination
-    #[structopt(short = "c", long = "coordinator", parse(from_os_str))]
-    coordinator_path: PathBuf,
+    /// Path to the signed WebAssembly module responsible for command processing
+    #[structopt(short = "c", long = "cmdproc", parse(from_os_str))]
+    processor_path: PathBuf,
 
     /// Path to the capability providers used by this host
     #[structopt(short = "p", long = "provider", parse(from_os_str))]
@@ -28,19 +28,20 @@ struct CliCommand {
 }
 
 fn handle_command(cmd: CliCommand) -> Result<(), Box<dyn ::std::error::Error>> {
-    host::add_actor(Actor::from_file(cmd.coordinator_path)?)?;
+    host::add_actor(Actor::from_file(cmd.processor_path)?)?;
 
     cmd.provider_paths.iter().for_each(|p| {
         host::add_native_capability(NativeCapability::from_file(p).unwrap()).unwrap();
     });
 
+    // Listens for match events, processing `TurnRequested` events
     host::configure(
-        "MBM7CUPD6VOXKKKPLY23KXYFYG2AAU2M24X6BOME3VOVKMIOZILAVP5N",
+        "MBCMWXKIR2YSPI3PTIKCF4KJ4XVBUJHVY3UFT4K75SAWS5BZ7VIPMSNZ",
         "wascc:messaging",
-        generate_config("wasmdome.matches.create, wasmdome.match_events.*"),
+        generate_config("wasmdome.match_events.*"),
     )?;
     host::configure(
-        "MBM7CUPD6VOXKKKPLY23KXYFYG2AAU2M24X6BOME3VOVKMIOZILAVP5N",
+        "MBCMWXKIR2YSPI3PTIKCF4KJ4XVBUJHVY3UFT4K75SAWS5BZ7VIPMSNZ",
         "wascc:keyvalue",
         redis_config(),
     )?;

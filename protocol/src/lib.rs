@@ -4,26 +4,62 @@ extern crate serde_derive;
 pub mod events {
     use domaincommon as domain;
 
-    pub const SUBJECT_EVENTS_MASK: &str = "wasmdome.match_events.{}";
+    // 💩💩💩 This is an annoying hack to get around the restriction that you can't use
+    // 💩💩💩 format! with a string constant, so instead we use a macro to generate
+    // 💩💩💩 a string literal.
+    #[macro_export]
+    macro_rules! match_events_subject {
+        () => {
+            "wasmdome.match_events.{}"
+        };
+    }
+
     pub const SUBJECT_MATCH_EVENTS_PREFIX: &str = "wasmdome.match_events.";
 
     #[derive(Clone, Debug, Serialize, Deserialize)]
-    pub enum MatchEvent {        
-        MatchCreated { match_id: String, actors: Vec<String>, board_height: u32, board_width: u32 },
-        ActorScheduled { actor: String, match_id: String },
-        MatchStarted { match_id: String },
+    pub enum MatchEvent {
+        MatchCreated {
+            match_id: String,
+            actors: Vec<String>,
+            board_height: u32,
+            board_width: u32,
+        },
+        ActorStarted {
+            actor: String,
+            match_id: String,
+        },
+        MatchStarted {
+            match_id: String,
+        },
         /// Published in response to a TakeTurn command. The command processor will be listening for this event
-        TurnRequested { actor: String, match_id: String, turn: u32, commands: Vec<domain::commands::MechCommand> }        
+        TurnRequested {
+            actor: String,
+            match_id: String,
+            turn: u32,
+            commands: Vec<domain::commands::MechCommand>,
+        },
+        /// Emitted by the command processor so that downstream listeners (e.g. historian, leaderboard) can process
+        TurnEvent {
+            actor: String,
+            match_id: String,
+            turn: u32,
+            turn_event: domain::events::GameEvent,
+        },
     }
 }
 
 pub mod commands {
-    
+
+    #[macro_export]
+    macro_rules! turns_subject {
+        () => {
+            "wasmdome.matches.{}.turns.{}"
+        };
+    }
 
     pub const SUBJECT_CREATE_MATCH: &str = "wasmdome.matches.create";
     pub const SUBJECT_MATCH_COMMANDS_PREFIX: &str = "wasmdome.matches";
     pub const SUBJECT_SCHEDULE_ACTOR: &str = "scheduleactor";
-    pub const SUBJECT_TURNS_MASK: &str = "wasmdome.matches.{}.turns.{}";
 
     /// Sent on a match subject to tell a given mech to take its turn. The response
     /// to this should be an acknowledgement containing the list of commands performed
@@ -51,11 +87,12 @@ pub mod commands {
 
     /// Signals the desire to create a new match
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    pub struct CreateMatch {        
-        pub match_id: String, 
-        pub actors: Vec<String>,        
+    pub struct CreateMatch {
+        pub match_id: String,
+        pub actors: Vec<String>,
         pub board_height: u32,
         pub board_width: u32,
+        pub max_turns: u32,
     }
 
     /// Response to a request to start a match. Indicates that the

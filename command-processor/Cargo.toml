@@ -13,6 +13,7 @@ wasmdome-protocol = { path = "../protocol" }
 domaincommon =  { path = "../domaincommon" }
 serde = "1.0"
 serde_json = "1.0"
+eventsourcing = "0.1.4"
 
 [profile.release]
 # Optimize for small code size

@@ -94,6 +94,7 @@ name = "command-processor"
 version = "0.0.1"
 dependencies = [
  "domaincommon",
+ "eventsourcing",
  "serde",
  "serde_json",
  "wascc-actor",

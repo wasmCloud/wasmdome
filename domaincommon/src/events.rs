@@ -23,4 +23,11 @@ pub enum GameEvent {
         mech: String,
         position: Point,
     },
+    MechTurnCompleted {
+        mech: String,
+        turn: u32,
+    },
+    MatchTurnCompleted {
+        new_turn: u32,
+    },
 }

@@ -106,7 +106,7 @@ impl Point {
 /// Represents the dimensions and other metadata for a game board. All game boards
 /// have an origin of (0,0) that starts in the bottom left (southwest) corner of
 /// the scene.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 pub struct GameBoard {
     pub width: u32,
     pub height: u32,
@@ -127,7 +127,7 @@ pub enum WeaponType {
     Secondary = 1,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 pub enum GridDirection {
     North = 0,
     NorthEast = 1,

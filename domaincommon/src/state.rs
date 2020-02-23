@@ -3,7 +3,7 @@ use crate::{
 };
 use eventsourcing::Result;
 use eventsourcing::{Aggregate, AggregateState};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 const WALL_DAMAGE: u32 = 10; // Lose 10 HP for bouncing off obstacles
 const PRIMARY_DAMAGE: u32 = 75;
@@ -20,17 +20,31 @@ pub struct MatchParameters {
     pub width: u32,
     pub height: u32,
     pub actors: Vec<String>,
+    pub max_turns: u32,
 }
 
 impl MatchParameters {
-    pub fn new(match_id: String, width: u32, height: u32, actors: Vec<String>) -> Self {
+    pub fn new(
+        match_id: String,
+        width: u32,
+        height: u32,
+        max_turns: u32,
+        actors: Vec<String>,
+    ) -> Self {
         MatchParameters {
             match_id,
             width,
             height,
             actors,
+            max_turns,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TurnStatus {
+    pub current: u32,
+    pub taken: HashSet<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -39,18 +53,20 @@ pub struct MatchState {
     pub mechs: HashMap<String, MechState>,
     pub generation: u64,
     pub game_board: GameBoard,
+    pub turn_status: TurnStatus,
 }
 
 impl MatchState {
     pub fn new_with_parameters(params: MatchParameters) -> MatchState {
-        MatchState{
+        MatchState {
             parameters: params.clone(),
             mechs: HashMap::new(),
             generation: 0,
-            game_board: GameBoard{
+            game_board: GameBoard {
                 height: params.height,
                 width: params.width,
-            }
+            },
+            turn_status: Default::default(),
         }
     }
 
@@ -75,7 +91,7 @@ impl MatchState {
         state
     }
 
-    fn mech_at(state: &MatchState, position: &Point) -> Option<MechState> {        
+    fn mech_at(state: &MatchState, position: &Point) -> Option<MechState> {
         state
             .mechs
             .values()
@@ -97,6 +113,18 @@ impl MatchState {
             mechs: state.mechs,
             ..state
         }
+    }
+
+    fn advance_match_turn(state: &MatchState, turn: u32) -> MatchState {
+        let mut state = state.clone();
+        state.turn_status.current = turn;
+        state
+    }
+
+    fn advance_mech_turn(state: &MatchState, mech: &str) -> MatchState {
+        let mut state = state.clone();
+        state.turn_status.taken.insert(mech.to_string());
+        state
     }
 }
 
@@ -134,6 +162,7 @@ impl Aggregate for Match {
     type State = MatchState;
 
     fn apply_event(state: &Self::State, evt: &Self::Event) -> Result<Self::State> {
+        println!("{:?}", evt);
         match evt {
             GameEvent::MechSpawned { mech, position } => {
                 Ok(MatchState::insert_mech(state, mech, position))
@@ -166,23 +195,32 @@ impl Aggregate for Match {
             GameEvent::MechWon { mech } => Ok(MatchState::modify_mech(state, mech, |m| {
                 MechState { victor: true, ..m }
             })),
+            GameEvent::MatchTurnCompleted { new_turn } => {
+                Ok(MatchState::advance_match_turn(state, *new_turn))
+            }
+            GameEvent::MechTurnCompleted { mech, .. } => {
+                Ok(MatchState::advance_mech_turn(state, mech))
+            }
         }
     }
 
     fn handle_command(state: &Self::State, cmd: &Self::Command) -> Result<Vec<Self::Event>> {
         match cmd {
-            MechCommand::Move { mech, direction } => Self::handle_move(state, mech, direction),
-            MechCommand::FirePrimary { mech, direction } => {
-                Self::handle_fire_primary(state, mech, direction)
-            }
-            MechCommand::FireSecondary { mech, direction } => {
-                Self::handle_fire_secondary(state, mech, direction)
-            }
-            MechCommand::RequestRadarScan { mech } => Self::handle_radar(state, mech),
-            MechCommand::SpawnMech { mech, position } => Ok(vec![GameEvent::MechSpawned {
+            MechCommand::Move {
+                mech, direction, ..
+            } => Self::handle_move(state, mech, direction),
+            MechCommand::FirePrimary {
+                mech, direction, ..
+            } => Self::handle_fire_primary(state, mech, direction),
+            MechCommand::FireSecondary {
+                mech, direction, ..
+            } => Self::handle_fire_secondary(state, mech, direction),
+            MechCommand::RequestRadarScan { mech, .. } => Self::handle_radar(state, mech),
+            MechCommand::SpawnMech { mech, position, .. } => Ok(vec![GameEvent::MechSpawned {
                 mech: mech.to_string(),
                 position: position.clone(),
             }]),
+            MechCommand::FinishTurn { mech, turn } => Self::handle_turn_finish(state, mech, *turn),
         }
     }
 }
@@ -206,6 +244,33 @@ impl Match {
                 damage: WALL_DAMAGE,
                 damage_source: DamageSource::Wall,
             }]),
+        }
+    }
+
+    fn handle_turn_finish(
+        state: &<Match as Aggregate>::State,
+        mech: &str,
+        turn: u32,
+    ) -> Result<Vec<<Match as Aggregate>::Event>> {
+        if state.turn_status.taken.contains(mech) && state.turn_status.current == turn {
+            Err(eventsourcing::Error {
+                kind: eventsourcing::Kind::CommandFailure(
+                    "Cannot mark the same turn completed multiple times for the same mech"
+                        .to_string(),
+                ),
+            })
+        } else {
+            let mut evts = Vec::new();
+            evts.push(GameEvent::MechTurnCompleted {
+                mech: mech.to_string(),
+                turn,
+            });
+            if state.turn_status.taken.len() == state.parameters.actors.len()-1 { // this state won't change until the event is processed, so the count is down by 1
+                evts.push(GameEvent::MatchTurnCompleted {
+                    new_turn: state.turn_status.current+1,
+                });
+            }
+            Ok(evts)
         }
     }
 
@@ -281,10 +346,16 @@ mod test {
     use crate::eventsourcing::Aggregate;
 
     fn gen_root_state(mechs: Vec<(&str, Point)>) -> MatchState {
-        let mut state = MatchState::default();
+        let mut state = MatchState::new_with_parameters(MatchParameters{
+            actors: mechs.iter().map(|(a,_p)| a.to_string()).collect(),
+            match_id: "test_match".to_string(),
+            max_turns: 1000,
+            height: 24,
+            width: 24,
+        });
 
         for (mech, position) in mechs {
-            let cmd = MechCommand::SpawnMech {
+            let cmd = MechCommand::SpawnMech {                
                 mech: mech.to_string(),
                 position: position.clone(),
             };
@@ -312,6 +383,7 @@ mod test {
     fn test_off_board_collision() {
         let state = gen_root_state(vec![("jeeves", Point::new(0, 0))]);
         let cmd = MechCommand::Move {
+            turn: 0,
             mech: "jeeves".to_string(),
             direction: GridDirection::South,
         };
@@ -328,6 +400,7 @@ mod test {
     fn test_safe_move() {
         let state = gen_root_state(vec![("jeeves", Point::new(5, 5))]);
         let cmd = MechCommand::Move {
+            turn: 0,
             mech: "jeeves".to_string(),
             direction: GridDirection::NorthEast,
         };
@@ -348,6 +421,7 @@ mod test {
         ]);
 
         let cmd = MechCommand::FirePrimary {
+            turn: 0,
             mech: "shooter".to_string(),
             direction: GridDirection::NorthEast,
         };
@@ -372,6 +446,7 @@ mod test {
         ]);
 
         let cmd = MechCommand::FireSecondary {
+            turn: 0,
             mech: "shooter".to_string(),
             direction: GridDirection::NorthEast,
         };
@@ -396,6 +471,7 @@ mod test {
         ]);
 
         let cmd = MechCommand::FireSecondary {
+            turn: 0,
             mech: "shooter".to_string(),
             direction: GridDirection::NorthEast,
         };
@@ -405,7 +481,6 @@ mod test {
             .iter()
             .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap());
 
-        println!("{:?}", state);
         assert_eq!(
             state.mechs["victim"].health,
             INITIAL_HEALTH - SECONDARY_DAMAGE
@@ -414,5 +489,39 @@ mod test {
             state.mechs["shooter"].health,
             INITIAL_HEALTH - SECONDARY_SPLASH_DAMAGE
         );
+    }
+
+    #[test]
+    fn test_take_turns() {
+        let state = gen_root_state(vec![("al", Point::new(10, 6)), ("bob", Point::new(11, 7))]);
+
+        let al1 = MechCommand::FirePrimary {
+            turn: 0,
+            mech: "al".to_string(),
+            direction: GridDirection::South,
+        };
+        let al2 = MechCommand::FinishTurn {
+            mech: "al".to_string(),
+            turn: 0,
+        };
+        let bob1 = MechCommand::Move {
+            turn: 0,
+            mech: "bob".to_string(),
+            direction: GridDirection::South,
+        };
+        let bob2 = MechCommand::FinishTurn {
+            mech: "bob".to_string(),
+            turn: 0,
+        };
+
+        let cmds = vec![al1, al2, bob1, bob2];
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+        println!("{:?}", state);
+        assert_eq!(state.turn_status.current, 1);
     }
 }

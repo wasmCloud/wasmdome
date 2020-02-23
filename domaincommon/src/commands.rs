@@ -3,23 +3,34 @@ use crate::{GridDirection, Point};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MechCommand {
     Move {
+        turn: u32,
         mech: String,
         direction: GridDirection,
     },
     FirePrimary {
+        turn: u32,
         mech: String,
         direction: GridDirection,
     },
     FireSecondary {
+        turn: u32,
         mech: String,
         direction: GridDirection,
     },
     RequestRadarScan {
+        turn: u32,
         mech: String,
     },
-    SpawnMech {
+    SpawnMech {        
         mech: String,
         position: Point,
+    },
+    /// Marks a turn as complete. One of these must be at the end of every
+    /// array that comes out of an actor's turn (the developer will not need
+    /// to manually append this, the SDK will)
+    FinishTurn {
+        mech: String,
+        turn: u32,
     },
 }
 
@@ -31,6 +42,7 @@ impl MechCommand {
             MechCommand::FireSecondary { .. } => 4,
             MechCommand::RequestRadarScan { .. } => 1,
             MechCommand::SpawnMech { .. } => 0,
+            MechCommand::FinishTurn { .. } => 0,
         }
     }
 }

@@ -13,11 +13,14 @@
 // limitations under the License.
 
 extern crate wascc_actor as actor;
+
+#[macro_use]
+extern crate wasmdome_protocol as protocol;
+
 use actor::prelude::*;
 use domaincommon as domain;
 use protocol::commands::*;
 use protocol::events::*;
-use wasmdome_protocol as protocol;
 
 mod store;
 
@@ -48,7 +51,7 @@ fn handle_message(
 fn handle_match_event(ctx: &CapabilitiesContext, msg: Vec<u8>) -> ReceiveResult {
     let evt: MatchEvent = serde_json::from_slice(&msg)?;
     match evt {
-        MatchEvent::ActorScheduled { match_id, actor } => {
+        MatchEvent::ActorStarted { match_id, actor } => {
             spawn_actor(ctx, &match_id, &actor)?;
             if is_match_ready(ctx, &match_id)? {
                 start_match(ctx, &match_id)?;
@@ -87,22 +90,21 @@ fn start_match(ctx: &CapabilitiesContext, match_id: &str) -> ReceiveResult {
     let started = protocol::events::MatchEvent::MatchStarted {
         match_id: match_id.to_string(),
     };
-    let subject = format!("wasmdome.match_events.{}", match_id);
+    let subject = format!(protocol::match_events_subject!(), match_id);
     ctx.msg()
         .publish(&subject, None, &serde_json::to_vec(&started)?)?;
 
     let state = store::load_state(ctx, match_id)?;
 
     for actor in state.parameters.actors {
-        let turn_subject = format!("wasmdome.matches.{}.turns.{}", match_id, actor);
+        let turn_subject = format!(protocol::turns_subject!(), match_id, actor);
         let turn = protocol::commands::TakeTurn {
             actor: actor.to_string(),
             match_id: match_id.to_string(),
             turn: 0,
         };
-        ctx
-            .msg()  
-            .publish(&turn_subject, None, &serde_json::to_vec(&turn)?)?;        
+        ctx.msg()
+            .publish(&turn_subject, None, &serde_json::to_vec(&turn)?)?;
     }
 
     Ok(vec![])
@@ -135,6 +137,7 @@ fn create_match(ctx: &CapabilitiesContext, msg: Vec<u8>, reply_to: &str) -> Rece
         createmsg.match_id.clone(),
         createmsg.board_width,
         createmsg.board_height,
+        createmsg.max_turns,
         createmsg.actors.clone(),
     );
     let state = MatchState::new_with_parameters(params);
@@ -143,7 +146,7 @@ fn create_match(ctx: &CapabilitiesContext, msg: Vec<u8>, reply_to: &str) -> Rece
     ctx.msg()
         .publish(reply_to, None, &serde_json::to_vec(&ack)?)?;
     ctx.msg().publish(
-        &format!("wasmdome.matches.{}.events", createmsg.match_id),
+        &format!(protocol::match_events_subject!(), createmsg.match_id),
         None,
         &serde_json::to_vec(&MatchEvent::MatchCreated {
             match_id: createmsg.match_id.clone(),
@@ -165,7 +168,7 @@ fn create_match(ctx: &CapabilitiesContext, msg: Vec<u8>, reply_to: &str) -> Rece
             ),
             None,
             &serde_json::to_vec(&sched)?,
-        )?;        
+        )?;
     }
     Ok(vec![])
 }
