@@ -14,7 +14,7 @@
 
 extern crate wascc_actor as actor;
 
-#[macro_use]
+
 extern crate wasmdome_protocol as protocol;
 
 use actor::prelude::*;
@@ -51,8 +51,8 @@ fn handle_message(
 fn handle_match_event(ctx: &CapabilitiesContext, msg: Vec<u8>) -> ReceiveResult {
     let evt: MatchEvent = serde_json::from_slice(&msg)?;
     match evt {
-        MatchEvent::ActorStarted { match_id, actor } => {
-            spawn_actor(ctx, &match_id, &actor)?;
+        MatchEvent::ActorStarted { match_id, actor, avatar, name, team } => {
+            spawn_actor(ctx, &match_id, &actor, avatar, name, team)?;
             if is_match_ready(ctx, &match_id)? {
                 start_match(ctx, &match_id)?;
             }
@@ -78,6 +78,9 @@ fn spawn_actor(
     ctx: &CapabilitiesContext,
     match_id: &str,
     actor: &str,
+    avatar: String,
+    name: String,
+    team: String,
 ) -> ::std::result::Result<(), Box<dyn ::std::error::Error>> {
     ctx.log(&format!("Spawning actor {} into match {}", actor, match_id));
     use domain::eventsourcing::Aggregate;
@@ -85,6 +88,9 @@ fn spawn_actor(
     let mut state: domain::state::MatchState = store::load_state(ctx, match_id)?;
     let cmd = domain::commands::MechCommand::SpawnMech {
         mech: actor.to_string(),
+        avatar: avatar,
+        name: name, 
+        team: team,
         position: domain::Point::new(0, 0), // TODO: don't spawn them on the origin
     };
     for event in domain::state::Match::handle_command(&state, &cmd).unwrap() {
@@ -148,7 +154,8 @@ fn is_match_ready(
 /// 2. Publish MatchCreated event
 /// 3. Send ScheduleActor command for each actor in the match
 fn create_match(ctx: &CapabilitiesContext, msg: Vec<u8>, reply_to: &str) -> ReceiveResult {
-    use domain::state::{MatchParameters, MatchState};
+    use domain::state::MatchState;
+    use domain::MatchParameters;
     let createmsg: CreateMatch = serde_json::from_slice(&msg)?;
 
     let ack = StartMatchAck {

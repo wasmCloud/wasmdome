@@ -44,6 +44,9 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
             info!("Received actor schedule request [{:?}].", schedule_req);
             // TODO: replace this fakery with real scheduling
             let scheduled = protocol::events::MatchEvent::ActorStarted {
+                name: format!("{}'s Mech", schedule_req.actor),
+                avatar: "none".to_string(),
+                team: "earth".to_string(),
                 actor: schedule_req.actor.clone(),
                 match_id: schedule_req.match_id.clone(),
             };
