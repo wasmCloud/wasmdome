@@ -1,5 +1,11 @@
 use crate::{DamageSource, Point, DOMAIN_VERSION};
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum EndCause {
+    MaxTurnsCompleted,
+    MechVictory(String),
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Event)]
 #[event_type_version(DOMAIN_VERSION)]
 #[event_source("events://wasmdome.dev/game")]
@@ -13,11 +19,9 @@ pub enum GameEvent {
         damage: u32,
         damage_source: DamageSource,
     },
-    MechWon {
-        mech: String,
-    },
     MechDestroyed {
-        destroyed_mech: String,
+        damage_target: String,
+        damage_source: DamageSource,
     },
     MechSpawned {
         mech: String,
@@ -29,5 +33,8 @@ pub enum GameEvent {
     },
     MatchTurnCompleted {
         new_turn: u32,
+    },
+    GameFinished {
+        cause: EndCause,
     },
 }

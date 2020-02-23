@@ -28,7 +28,7 @@ impl Point {
     pub fn adjacent_points(&self, board: &GameBoard) -> Vec<Point> {
         let mut points = Vec::new();
         for direction in &ALL_DIRECTIONS {
-            if let Some(target) = self.relative_point(board, direction) {
+            if let Some(target) = self.relative_point(board, direction, 1) {
                 points.push(target)
             }
         }
@@ -42,12 +42,12 @@ impl Point {
         count: usize,
     ) -> Vec<Point> {
         let mut points = Vec::new();
-        let mut p = Self::relative_point(&self, board, direction);
+        let mut p = Self::relative_point(&self, board, direction, 1);
         for _i in 0..count {
             match p {
                 Some(point) => {
                     points.push(point.clone());
-                    p = Self::relative_point(&point, board, direction);
+                    p = Self::relative_point(&point, board, direction, 1);
                 }
                 None => break,
             }
@@ -56,39 +56,44 @@ impl Point {
     }
 
     /// Returns a point 1 unit away in the direction indicated. Grid origin is the most Southwest point
-    pub fn relative_point(&self, board: &GameBoard, direction: &GridDirection) -> Option<Point> {
+    pub fn relative_point(
+        &self,
+        board: &GameBoard,
+        direction: &GridDirection,
+        length: i32,
+    ) -> Option<Point> {
         let destination = match direction {
             GridDirection::North => Point {
                 x: self.x,
-                y: self.y + 1,
+                y: self.y + length,
             },
             GridDirection::NorthEast => Point {
-                x: self.x + 1,
-                y: self.y + 1,
+                x: self.x + length,
+                y: self.y + length,
             },
             GridDirection::East => Point {
-                x: self.x + 1,
+                x: self.x + length,
                 y: self.y,
             },
             GridDirection::SouthEast => Point {
-                x: self.x + 1,
-                y: self.y - 1,
+                x: self.x + length,
+                y: self.y - length,
             },
             GridDirection::South => Point {
                 x: self.x,
-                y: self.y - 1,
+                y: self.y - length,
             },
             GridDirection::SouthWest => Point {
-                x: self.x - 1,
-                y: self.y - 1,
+                x: self.x - length,
+                y: self.y - length,
             },
             GridDirection::West => Point {
-                x: self.x - 1,
+                x: self.x - length,
                 y: self.y,
             },
             GridDirection::NorthWest => Point {
-                x: self.x - 1,
-                y: self.y + 1,
+                x: self.x - length,
+                y: self.y + length,
             },
         };
         if !destination.is_on_board(board) {
@@ -161,7 +166,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_gather_points() {
+    fn gather_points() {
         let board = GameBoard::default();
         let origin = Point::new(6, 6);
 
@@ -193,7 +198,7 @@ mod test {
     }
 
     #[test]
-    fn test_adjacent_points() {
+    fn adjacent_points() {
         let board = GameBoard::default();
         let origin = Point::new(10, 5);
         let points = origin.adjacent_points(&board);

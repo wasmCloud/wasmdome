@@ -21,7 +21,7 @@ pub enum MechCommand {
         turn: u32,
         mech: String,
     },
-    SpawnMech {        
+    SpawnMech {
         mech: String,
         position: Point,
     },
