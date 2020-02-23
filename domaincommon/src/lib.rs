@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 #[macro_use]
 extern crate serde_derive;
 
@@ -5,8 +7,11 @@ extern crate serde_derive;
 extern crate eventsourcing_derive;
 pub extern crate eventsourcing;
 
+pub use radar::RadarPing;
+
 pub mod commands;
 pub mod events;
+mod radar;
 pub mod state;
 
 pub(crate) const DOMAIN_VERSION: &str = "1.0";
@@ -40,13 +45,13 @@ impl Point {
         board: &GameBoard,
         direction: &GridDirection,
         count: usize,
-    ) -> Vec<Point> {
+    ) -> Vec<(Point, usize)> {
         let mut points = Vec::new();
         let mut p = Self::relative_point(&self, board, direction, 1);
-        for _i in 0..count {
+        for i in 0..count {
             match p {
                 Some(point) => {
-                    points.push(point.clone());
+                    points.push((point.clone(), i + 1));
                     p = Self::relative_point(&point, board, direction, 1);
                 }
                 None => break,
@@ -155,6 +160,39 @@ static ALL_DIRECTIONS: [GridDirection; 8] = [
     GridDirection::NorthWest,
 ];
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct MatchParameters {
+    pub match_id: String,
+    pub width: u32,
+    pub height: u32,
+    pub actors: Vec<String>,
+    pub max_turns: u32,
+}
+
+impl MatchParameters {
+    pub fn new(
+        match_id: String,
+        width: u32,
+        height: u32,
+        max_turns: u32,
+        actors: Vec<String>,
+    ) -> Self {
+        MatchParameters {
+            match_id,
+            width,
+            height,
+            actors,
+            max_turns,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TurnStatus {
+    pub current: u32,
+    pub taken: HashSet<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DamageSource {
     Wall,
@@ -170,7 +208,11 @@ mod test {
         let board = GameBoard::default();
         let origin = Point::new(6, 6);
 
-        let points = origin.gather_points(&board, &GridDirection::NorthEast, 6);
+        let points = origin
+            .gather_points(&board, &GridDirection::NorthEast, 6)
+            .into_iter()
+            .map(|(p, _d)| p)
+            .collect::<Vec<_>>();
         assert_eq!(
             points,
             vec![
@@ -183,7 +225,11 @@ mod test {
             ]
         );
 
-        let truncated_points = origin.gather_points(&board, &GridDirection::SouthWest, 20);
+        let truncated_points = origin
+            .gather_points(&board, &GridDirection::SouthWest, 20)
+            .into_iter()
+            .map(|(p, _d)| p)
+            .collect::<Vec<_>>();
         assert_eq!(
             truncated_points,
             vec![

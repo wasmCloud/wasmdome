@@ -1,11 +1,11 @@
 use crate::{
     commands::MechCommand,
     events::{EndCause, GameEvent},
-    DamageSource, GameBoard, GridDirection, Point,
+    DamageSource, GameBoard, GridDirection, MatchParameters, Point, RadarPing, TurnStatus,
 };
 use eventsourcing::Result;
 use eventsourcing::{Aggregate, AggregateState};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 const WALL_DAMAGE: u32 = 10; // Lose 10 HP for bouncing off obstacles
 const PRIMARY_DAMAGE: u32 = 75;
@@ -17,39 +17,6 @@ const PRIMARY_RANGE: usize = 3;
 const SECONDARY_RANGE: usize = 6;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct MatchParameters {
-    pub match_id: String,
-    pub width: u32,
-    pub height: u32,
-    pub actors: Vec<String>,
-    pub max_turns: u32,
-}
-
-impl MatchParameters {
-    pub fn new(
-        match_id: String,
-        width: u32,
-        height: u32,
-        max_turns: u32,
-        actors: Vec<String>,
-    ) -> Self {
-        MatchParameters {
-            match_id,
-            width,
-            height,
-            actors,
-            max_turns,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct TurnStatus {
-    pub current: u32,
-    pub taken: HashSet<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MatchState {
     pub parameters: MatchParameters,
     pub mechs: HashMap<String, MechState>,
@@ -57,6 +24,7 @@ pub struct MatchState {
     pub game_board: GameBoard,
     pub turn_status: TurnStatus,
     pub completed: Option<EndCause>,
+    pub radar_pings: HashMap<String, Vec<RadarPing>>,
 }
 
 impl MatchState {
@@ -71,6 +39,7 @@ impl MatchState {
             },
             completed: None,
             turn_status: Default::default(),
+            radar_pings: HashMap::new(),
         }
     }
 
@@ -83,6 +52,12 @@ impl MatchState {
             });
         }
         Ok(())
+    }
+
+    fn update_radar(state: &MatchState, actor: &str, pings: &[RadarPing]) -> MatchState {
+        let mut state = state.clone();
+        state.radar_pings.insert(actor.to_string(), pings.to_vec());
+        state
     }
 
     fn finish_game(state: &MatchState, cause: &EndCause) -> MatchState {
@@ -112,7 +87,7 @@ impl MatchState {
         state
     }
 
-    fn mech_at(state: &MatchState, position: &Point) -> Option<MechState> {
+    pub(crate) fn mech_at(state: &MatchState, position: &Point) -> Option<MechState> {
         state
             .mechs
             .values()
@@ -120,13 +95,23 @@ impl MatchState {
             .cloned()
     }
 
-    fn insert_mech(state: &MatchState, mech: &str, position: &Point) -> MatchState {
+    fn insert_mech(
+        state: &MatchState,
+        mech: &str,
+        position: &Point,
+        team: &str,
+        avatar: &str,
+        name: &str,
+    ) -> MatchState {
         let mut state = state.clone();
         state.mechs.insert(
             mech.to_string(),
             MechState {
                 position: position.clone(),
                 id: mech.to_string(),
+                team: team.to_string(),
+                avatar: avatar.to_string(),
+                name: name.to_string(),
                 ..Default::default()
             },
         );
@@ -163,6 +148,9 @@ pub struct MechState {
     pub position: Point,
     pub alive: bool,
     pub victor: bool,
+    pub team: String,
+    pub avatar: String,
+    pub name: String,
 }
 
 impl Default for MechState {
@@ -173,6 +161,9 @@ impl Default for MechState {
             alive: true,
             victor: false,
             id: "None".to_string(),
+            team: "earth".to_string(),
+            avatar: "none".to_string(),
+            name: "Anonymous".to_string(),
         }
     }
 }
@@ -184,10 +175,18 @@ impl Aggregate for Match {
     type State = MatchState;
 
     fn apply_event(state: &Self::State, evt: &Self::Event) -> Result<Self::State> {
-        println!("{:?}", evt);
         match evt {
-            GameEvent::MechSpawned { mech, position } => {
-                Ok(MatchState::insert_mech(state, mech, position))
+            GameEvent::MechSpawned {
+                mech,
+                position,
+                team,
+                avatar,
+                name,
+            } => Ok(MatchState::insert_mech(
+                state, mech, position, team, avatar, name,
+            )),
+            GameEvent::RadarScanCompleted { actor, results } => {
+                Ok(MatchState::update_radar(state, actor, results))
             }
             GameEvent::PositionUpdated { position, mech } => {
                 Ok(MatchState::modify_mech(state, mech, |m| MechState {
@@ -236,9 +235,18 @@ impl Aggregate for Match {
                 mech, direction, ..
             } => Self::handle_fire_secondary(state, mech, direction),
             MechCommand::RequestRadarScan { mech, .. } => Self::handle_radar(state, mech),
-            MechCommand::SpawnMech { mech, position, .. } => Ok(vec![GameEvent::MechSpawned {
+            MechCommand::SpawnMech {
+                mech,
+                position,
+                team,
+                avatar,
+                name,
+            } => Ok(vec![GameEvent::MechSpawned {
                 mech: mech.to_string(),
                 position: position.clone(),
+                team: team.to_string(),
+                avatar: avatar.to_string(),
+                name: name.to_string(),
             }]),
             MechCommand::FinishTurn { mech, turn } => Self::handle_turn_finish(state, mech, *turn),
         }
@@ -314,7 +322,7 @@ impl Match {
             .position
             .gather_points(&state.game_board, dir, PRIMARY_RANGE)
             .iter()
-            .filter_map(|p| MatchState::mech_at(state, p))
+            .filter_map(|(p, _d)| MatchState::mech_at(state, p))
             .collect();
         if targets.len() > 0 {
             evts.extend(Self::do_damage(
@@ -339,7 +347,7 @@ impl Match {
             .position
             .gather_points(&state.game_board, dir, SECONDARY_RANGE)
             .iter()
-            .filter_map(|p| MatchState::mech_at(state, p))
+            .filter_map(|(p, _d)| MatchState::mech_at(state, p))
             .collect();
         let splash_origin: Option<Point> = if targets.len() > 0 {
             // Projectile stopped at a target
@@ -427,10 +435,15 @@ impl Match {
     }
 
     fn handle_radar(
-        _state: &<Match as Aggregate>::State,
-        _mech: &str,
+        state: &<Match as Aggregate>::State,
+        mech: &str,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
-        Ok(vec![])
+        let pings =
+            crate::radar::radar_ping(state, &state.mechs[mech].position, &state.mechs[mech].team);
+        Ok(vec![GameEvent::RadarScanCompleted {
+            actor: mech.to_string(),
+            results: pings,
+        }])
     }
 }
 
@@ -438,6 +451,8 @@ impl Match {
 mod test {
     use super::*;
     use crate::eventsourcing::Aggregate;
+    use crate::radar;
+    use crate::radar::RadarPing;
 
     fn gen_root_state(mechs: Vec<(&str, Point)>, max_turns: u32) -> MatchState {
         let mut state = MatchState::new_with_parameters(MatchParameters {
@@ -452,6 +467,9 @@ mod test {
             let cmd = MechCommand::SpawnMech {
                 mech: mech.to_string(),
                 position: position.clone(),
+                team: "earth".to_string(),
+                avatar: "none".to_string(),
+                name: format!("{}'s Mech", mech),
             };
             for event in Match::handle_command(&state, &cmd).unwrap() {
                 state = Match::apply_event(&state, &event).unwrap();
@@ -627,7 +645,6 @@ mod test {
                 .iter()
                 .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
         });
-        println!("{:?}", state);
         assert_eq!(state.turn_status.current, 1);
 
         let cmds = vec![al1, al2.clone()];
@@ -761,5 +778,122 @@ mod test {
             state.completed.unwrap(),
             EndCause::MechVictory("al".to_string())
         );
+    }
+
+    #[test]
+    fn radar_ping_basic() {
+        let state = gen_root_state(
+            vec![
+                ("al", Point::new(10, 6)),
+                ("bob", Point::new(13, 9)),
+                ("steve", Point::new(14, 6)),
+                ("nobody", Point::new(16, 9)),
+            ],
+            10,
+        );
+        let origin = Point::new(10, 6); // al's position
+        let results = radar::collect_targets(&state, &origin);
+        assert_eq!(results.len(), 2);
+        assert_eq!(
+            results.into_iter().map(|(m, _d)| m.id).collect::<Vec<_>>(),
+            vec!["bob", "steve"]
+        );
+    }
+
+    #[test]
+    fn radar_ping_full() {
+        let mut state = gen_root_state(
+            vec![
+                ("al", Point::new(10, 6)),
+                ("bob", Point::new(13, 9)),
+                ("steve", Point::new(14, 6)),
+                ("nobody", Point::new(16, 9)),
+            ],
+            10,
+        );
+        state.mechs.get_mut("steve").unwrap().team = "boylur".to_string();
+        let origin = Point::new(10, 6); // al's position
+        let results = radar::radar_ping(&state, &origin, "earth");
+        assert_eq!(
+            results,
+            vec![
+                RadarPing {
+                    name: "bob's Mech".to_string(),
+                    avatar: "none".to_string(),
+                    foe: false,
+                    distance: 3,
+                    location: Point::new(13, 9),
+                },
+                RadarPing {
+                    name: "steve's Mech".to_string(),
+                    avatar: "none".to_string(),
+                    foe: true,
+                    distance: 4,
+                    location: Point::new(14, 6),
+                }
+            ]
+        )
+    }
+
+    #[test]
+    fn radar_ping_state() {
+        let state = gen_root_state(
+            vec![
+                ("al", Point::new(10, 6)),
+                ("bob", Point::new(13, 9)),
+                ("steve", Point::new(14, 6)),
+                ("nobody", Point::new(16, 9)),
+            ],
+            10,
+        );
+
+        let cmds = vec![
+            MechCommand::RequestRadarScan {
+                mech: "al".to_string(),
+                turn: 0,
+            },
+            MechCommand::RequestRadarScan {
+                mech: "nobody".to_string(),
+                turn: 0,
+            },
+        ];
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        assert_eq!(
+            state.radar_pings["al"],
+            vec![
+                RadarPing {
+                    name: "bob's Mech".to_string(),
+                    avatar: "none".to_string(),
+                    foe: false,
+                    distance: 3,
+                    location: Point::new(13, 9),
+                },
+                RadarPing {
+                    name: "steve's Mech".to_string(),
+                    avatar: "none".to_string(),
+                    foe: false,
+                    distance: 4,
+                    location: Point::new(14, 6),
+                }
+            ]
+        );
+
+        assert_eq!(
+            state.radar_pings["nobody"],
+            vec![RadarPing {
+                name: "bob's Mech".to_string(),
+                avatar: "none".to_string(),
+                foe: false,
+                distance: 3,
+                location: Point::new(13, 9),
+            },]
+        )
     }
 }

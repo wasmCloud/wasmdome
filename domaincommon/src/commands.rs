@@ -24,6 +24,9 @@ pub enum MechCommand {
     SpawnMech {
         mech: String,
         position: Point,
+        team: String,
+        avatar: String,
+        name: String,
     },
     /// Marks a turn as complete. One of these must be at the end of every
     /// array that comes out of an actor's turn (the developer will not need

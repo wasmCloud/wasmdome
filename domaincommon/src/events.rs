@@ -1,4 +1,4 @@
-use crate::{DamageSource, Point, DOMAIN_VERSION};
+use crate::{DamageSource, Point, RadarPing, DOMAIN_VERSION};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum EndCause {
@@ -26,6 +26,13 @@ pub enum GameEvent {
     MechSpawned {
         mech: String,
         position: Point,
+        team: String,
+        avatar: String,
+        name: String,
+    },
+    RadarScanCompleted {
+        actor: String,
+        results: Vec<RadarPing>,
     },
     MechTurnCompleted {
         mech: String,
