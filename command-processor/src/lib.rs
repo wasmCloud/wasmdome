@@ -95,7 +95,13 @@ fn apply_command(
         .iter()
         .fold(state, |state, evt| {
             publish_event(ctx, actor, match_id, turn, evt); // This is so side-effecty. Fix this.
-            Match::apply_event(&state, evt).unwrap()
+            match Match::apply_event(&state, evt) {
+                Ok(evt) => evt,
+                Err(e) => {
+                    ctx.log(&format!("Event processing failure: {}", e));
+                    state
+                }
+            }
         })
 }
 

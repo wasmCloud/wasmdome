@@ -58,6 +58,17 @@ fn handle_match_event(ctx: &CapabilitiesContext, msg: Vec<u8>) -> ReceiveResult 
             }
             Ok(vec![])
         }
+        MatchEvent::TurnEvent {
+            match_id,
+            turn_event: domain::events::GameEvent::MatchTurnCompleted { new_turn },
+            ..
+        } => {
+            let state = store::load_state(ctx, &match_id)?;
+            if state.completed.is_none() {
+                publish_take_turns(ctx, &match_id, state.parameters.actors, new_turn)?;
+            }
+            Ok(vec![])
+        }
         _ => Ok(vec![]),
     }
 }
@@ -96,17 +107,27 @@ fn start_match(ctx: &CapabilitiesContext, match_id: &str) -> ReceiveResult {
 
     let state = store::load_state(ctx, match_id)?;
 
-    for actor in state.parameters.actors {
+    publish_take_turns(ctx, match_id, state.parameters.actors, 0)?;
+
+    Ok(vec![])
+}
+
+fn publish_take_turns(
+    ctx: &CapabilitiesContext,
+    match_id: &str,
+    actors: Vec<String>,
+    turn: u32,
+) -> ReceiveResult {
+    for actor in actors {
         let turn_subject = format!(protocol::turns_subject!(), match_id, actor);
         let turn = protocol::commands::TakeTurn {
             actor: actor.to_string(),
             match_id: match_id.to_string(),
-            turn: 0,
+            turn,
         };
         ctx.msg()
             .publish(&turn_subject, None, &serde_json::to_vec(&turn)?)?;
     }
-
     Ok(vec![])
 }
 

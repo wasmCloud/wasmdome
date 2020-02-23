@@ -1,11 +1,13 @@
 #[macro_use]
 extern crate log;
 
+use domaincommon::commands::MechCommand;
+
 use natsclient::*;
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use wascc_host::{host, Actor, NativeCapability};
+use wascc_host::{host, NativeCapability};
 use wasmdome_protocol as protocol;
 
 #[derive(Debug, StructOpt, Clone)]
@@ -61,20 +63,7 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
     client.subscribe("wasmdome.matches.*.turns.*", move |msg| {
         let turn: protocol::commands::TakeTurn = serde_json::from_slice(&msg.payload).unwrap();
         info!("Received take turn command [{:?}]", turn);
-        let ack = protocol::events::MatchEvent::TurnRequested {
-            actor: turn.actor.to_string(),
-            match_id: turn.match_id.to_string(),
-            turn: turn.turn,
-            commands: vec![domaincommon::commands::MechCommand::Move {
-                turn: turn.turn,
-                mech: turn.actor.to_string(),
-                direction: domaincommon::GridDirection::North,
-            },
-            domaincommon::commands::MechCommand::FinishTurn{
-                mech: turn.actor.to_string(),
-                turn: turn.turn,
-            }],
-        };
+        let ack = take_fake_turn(&turn.actor, turn.turn, &turn.match_id);
         let subject = format!("wasmdome.match_events.{}", turn.match_id);
         c2.publish(&subject, &serde_json::to_vec(&ack).unwrap(), None)?;
         Ok(())
@@ -89,6 +78,39 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
     Ok(())
 }
 
+fn take_fake_turn(actor: &str, turn: u32, match_id: &str) -> protocol::events::MatchEvent {
+    let cmd = if actor == "al" && turn < 3 {
+        MechCommand::Move {
+            turn,
+            mech: "al".to_string(),
+            direction: domaincommon::GridDirection::North,
+        }
+    } else if actor == "al" {
+        MechCommand::FireSecondary {
+            mech: "al".to_string(),
+            turn,
+            direction: domaincommon::GridDirection::South,
+        }
+    } else {
+        MechCommand::RequestRadarScan {
+            turn,
+            mech: actor.to_string(),
+        }
+    };
+    protocol::events::MatchEvent::TurnRequested {
+        actor: actor.to_string(),
+        turn: turn,
+        match_id: match_id.to_string(),
+        commands: vec![
+            cmd,
+            MechCommand::FinishTurn {
+                mech: actor.to_string(),
+                turn,
+            },
+        ],
+    }
+}
+
 fn main() -> std::result::Result<(), Box<dyn ::std::error::Error>> {
     let args = Cli::from_args();
     let cmd = args.command;
@@ -101,12 +123,4 @@ fn main() -> std::result::Result<(), Box<dyn ::std::error::Error>> {
         }
     }
     Ok(())
-}
-
-fn generate_config(sub: &str) -> HashMap<String, String> {
-    let mut hm = HashMap::new();
-    hm.insert("SUBSCRIPTION".to_string(), sub.to_string());
-    hm.insert("URL".to_string(), "nats://localhost:4222".to_string());
-
-    hm
 }
