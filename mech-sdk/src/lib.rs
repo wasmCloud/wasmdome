@@ -47,7 +47,11 @@ macro_rules! mech_handler {
             let take_turn: TakeTurn = serde_json::from_slice(&msg.into().message.unwrap().body)?;
             let mech =
                 $crate::WasmdomeMechInstruments::new(take_turn.clone(), take_turn.actor.clone());
-            let vec = $user_handler(mech);
+            let mut vec = $user_handler(mech);
+            vec.push(MechCommand::FinishTurn{
+                mech: take_turn.actor.clone(),
+                turn: take_turn.turn,
+            });
             let request = MatchEvent::TurnRequested {
                 actor: take_turn.actor,
                 match_id: take_turn.match_id.clone(),
