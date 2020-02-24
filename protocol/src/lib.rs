@@ -72,6 +72,7 @@ pub mod commands {
         pub actor: String,
         pub match_id: String,
         pub turn: u32,
+        pub state: domaincommon::state::MatchState,
     }
 
     /// Requests that a given actor be scheduled for a given match (auction style)

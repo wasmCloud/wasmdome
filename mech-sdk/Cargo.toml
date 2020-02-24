@@ -1,0 +1,23 @@
+[package]
+name = "wasmdome-mech-sdk"
+version = "0.0.1"
+authors = ["Kevin Hoffman <alothien@gmail.com>"]
+edition = "2018"
+description = "SDK for developing WebAssembly robots to compete autonomously in arenas"
+license = "Apache-2.0"
+homepage = "https://wasmdome.dev"
+documentation = "https://docs.rs/wasmdome-mech-sdk"
+readme = "README.md"
+keywords = ["wapc", "webassembly", "wasm", "wascc"]
+categories = ["wasm", "api-bindings", "games"]
+
+[dependencies]
+wascc-actor = "0.2.0"
+wascc-codec = "0.4.0"
+prost = "0.6.1"
+serde_json = "1.0.48"
+serde_derive = "1.0.104"
+serde = "1.0.104"
+prost-types = "0.6.1"
+wasmdome-protocol = { path = "../protocol" }
+domaincommon = { path = "../domaincommon" }

@@ -124,12 +124,14 @@ fn publish_take_turns(
     actors: Vec<String>,
     turn: u32,
 ) -> ReceiveResult {
+    let state = store::load_state(ctx, match_id)?;
     for actor in actors {
         let turn_subject = format!(protocol::turns_subject!(), match_id, actor);
         let turn = protocol::commands::TakeTurn {
             actor: actor.to_string(),
             match_id: match_id.to_string(),
             turn,
+            state: state.clone(),
         };
         ctx.msg()
             .publish(&turn_subject, None, &serde_json::to_vec(&turn)?)?;
