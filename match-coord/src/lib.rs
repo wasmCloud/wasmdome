@@ -14,7 +14,6 @@
 
 extern crate wascc_actor as actor;
 
-
 extern crate wasmdome_protocol as protocol;
 
 use actor::prelude::*;
@@ -51,7 +50,13 @@ fn handle_message(
 fn handle_match_event(ctx: &CapabilitiesContext, msg: Vec<u8>) -> ReceiveResult {
     let evt: MatchEvent = serde_json::from_slice(&msg)?;
     match evt {
-        MatchEvent::ActorStarted { match_id, actor, avatar, name, team } => {
+        MatchEvent::ActorStarted {
+            match_id,
+            actor,
+            avatar,
+            name,
+            team,
+        } => {
             spawn_actor(ctx, &match_id, &actor, avatar, name, team)?;
             if is_match_ready(ctx, &match_id)? {
                 start_match(ctx, &match_id)?;
@@ -86,12 +91,16 @@ fn spawn_actor(
     use domain::eventsourcing::Aggregate;
 
     let mut state: domain::state::MatchState = store::load_state(ctx, match_id)?;
+    let spawnpoint = domain::Point::new(
+        ctx.extras().get_random(0, state.parameters.width)? as i32,
+        ctx.extras().get_random(0, state.parameters.height)? as i32,
+    );
     let cmd = domain::commands::MechCommand::SpawnMech {
         mech: actor.to_string(),
-        avatar: avatar,
-        name: name, 
-        team: team,
-        position: domain::Point::new(0, 0), // TODO: don't spawn them on the origin
+        avatar,
+        name,
+        team,
+        position: spawnpoint,
     };
     for event in domain::state::Match::handle_command(&state, &cmd).unwrap() {
         state = domain::state::Match::apply_event(&state, &event).unwrap();
