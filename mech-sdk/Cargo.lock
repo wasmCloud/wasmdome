@@ -516,7 +516,7 @@ dependencies = [
 
 [[package]]
 name = "wascc-actor"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "prost 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -525,12 +525,12 @@ dependencies = [
  "serde_derive 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.48 (registry+https://github.com/rust-lang/crates.io-index)",
  "wapc-guest 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "wascc-codec 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wascc-codec 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "wascc-codec"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bytes 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -557,8 +557,8 @@ dependencies = [
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.48 (registry+https://github.com/rust-lang/crates.io-index)",
- "wascc-actor 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "wascc-codec 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wascc-actor 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wascc-codec 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasmdome-protocol 0.0.1",
 ]
 
@@ -662,8 +662,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
 "checksum unicode-xid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
 "checksum wapc-guest 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e54b0829ad79eabe62b538b11ac48e1811627ab5cdf3c433c363bcdddce81745"
-"checksum wascc-actor 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "deaedaa71d2acab9d070a9adb706a718a980e14ea64f7b522ee4f9ce298fef70"
-"checksum wascc-codec 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "784bbff6489ea978dad99cc48a4a491afd0b72cbe45af886e3c3aad87faeb6e0"
+"checksum wascc-actor 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7fd1d270ce40f189156cde3137144023a286a7af6600a1b1d8e7aa69ddeb45e8"
+"checksum wascc-codec 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "45cad687fdbb5776fa15df3399315083912aae3b03018af89e1ca061103c1b29"
 "checksum wasi 0.9.0+wasi-snapshot-preview1 (registry+https://github.com/rust-lang/crates.io-index)" = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 "checksum which 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5475d47078209a02e60614f7ba5e645ef3ed60f771920ac1906d7c1cc65024c8"
 "checksum winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "8093091eeb260906a183e6ae1abdba2ef5ef2257a21801128899c3fc699229c6"

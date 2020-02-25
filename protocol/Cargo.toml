@@ -3,8 +3,14 @@ name = "wasmdome-protocol"
 version = "0.0.1"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
+homepage = "https://wascc.dev"
+description = "Assembly Mechs: Beyond WasmDome - shared communication protocol"
+license = "Apache-2.0"
+documentation = "https://wasmdome.dev"
+readme = "README.md"
+keywords = ["webassembly", "wasm", "wasi", "wascc", "wapc"]
+categories = ["wasm", "api-bindings","command-line-utilities"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 serde = "1.0"

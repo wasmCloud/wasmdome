@@ -47,7 +47,11 @@ macro_rules! mech_handler {
             let take_turn: TakeTurn = serde_json::from_slice(&msg.into().message.unwrap().body)?;
             let mech =
                 $crate::WasmdomeMechInstruments::new(take_turn.clone(), take_turn.actor.clone());
-            let mut vec = $user_handler(mech);
+            let mut vec = if mech.is_alive() {
+                $user_handler(mech)
+            } else {
+                Vec::new()
+            };
             vec.push(MechCommand::FinishTurn{
                 mech: take_turn.actor.clone(),
                 turn: take_turn.turn,
@@ -102,6 +106,11 @@ impl WasmdomeMechInstruments {
 impl WasmdomeMechInstruments {
     fn current_mech(&self) -> &MechState {
         &self.turn.state.mechs[&self.actor]
+    }
+
+    #[allow(dead_code)]
+    pub fn is_alive(&self) -> bool {
+        self.current_mech().alive
     }
 }
 
