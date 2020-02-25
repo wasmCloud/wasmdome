@@ -67,6 +67,16 @@ impl MatchState {
         state
     }
 
+    fn remaining_alive(state: &MatchState) -> Vec<String> {
+        let mechs = state.mechs.clone();
+
+        mechs
+            .into_iter()
+            .filter(|(_key, m)| m.alive)
+            .map(|(key, _m)| key)
+            .collect()
+    }
+
     fn modify_mech<F>(state: &MatchState, mech: &str, fun: F) -> MatchState
     where
         F: Fn(MechState) -> MechState,
@@ -305,7 +315,9 @@ impl Match {
             // if completing this turn will bump the current turn to the max turns, then we're done
             if state.turn_status.current == state.parameters.max_turns - 1 {
                 evts.push(GameEvent::GameFinished {
-                    cause: EndCause::MaxTurnsCompleted,
+                    cause: EndCause::MaxTurnsCompleted {
+                        survivors: MatchState::remaining_alive(state),
+                    },
                 });
             }
             Ok(evts)
@@ -702,7 +714,11 @@ mod test {
                 .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
         });
 
-        assert_eq!(state.completed.unwrap(), EndCause::MaxTurnsCompleted);
+        if let EndCause::MaxTurnsCompleted { survivors } = state.completed.unwrap() {
+            assert_eq!(survivors.len(), 2);
+        } else {
+            assert!(false);
+        }
     }
 
     #[test]

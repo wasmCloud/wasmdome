@@ -1,6 +1,6 @@
-use crate::{    
+use crate::{
     state::{MatchState, MechState},
-    GridDirection, Point 
+    GridDirection, Point,
 };
 
 const RADAR_GRID: [(GridDirection, i32); 8] = [

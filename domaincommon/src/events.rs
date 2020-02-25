@@ -2,7 +2,7 @@ use crate::{DamageSource, Point, RadarPing, DOMAIN_VERSION};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum EndCause {
-    MaxTurnsCompleted,
+    MaxTurnsCompleted { survivors: Vec<String> },
     MechVictory(String),
 }
 
