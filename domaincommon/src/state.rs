@@ -15,6 +15,7 @@ const SECONDARY_SPLASH_DAMAGE: u32 = 90;
 const INITIAL_HEALTH: u32 = 1000;
 pub const PRIMARY_RANGE: usize = 3;
 pub const SECONDARY_RANGE: usize = 6;
+pub const APS_PER_TURN: u32 = 4;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MatchState {

@@ -30,6 +30,20 @@ impl Point {
         Point { x, y }
     }
 
+    pub fn bearing(&self, target: &Point) -> GridDirection {
+        let dx = (target.x - self.x) as f64;
+        let dy = (target.y - self.y) as f64;        
+        let mut angle = 90.0 - dy.atan2(dx).to_degrees();
+        
+        if angle < 0.0 {
+            angle = angle + 360.0;
+        }        
+        
+        println!("Angle: {}", angle);
+        let idx = angle.trunc() as usize / 45;
+        ALL_DIRECTIONS[idx]
+    }
+
     pub fn adjacent_points(&self, board: &GameBoard) -> Vec<Point> {
         let mut points = Vec::new();
         for direction in &ALL_DIRECTIONS {
@@ -137,7 +151,7 @@ pub enum WeaponType {
     Secondary = 1,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
 pub enum GridDirection {
     North = 0,
     NorthEast = 1,
@@ -261,5 +275,22 @@ mod test {
                 Point::new(9, 6),
             ]
         )
+    }
+
+    #[test]
+    fn compute_bearing() {
+        
+        // this should be a 45 degree bearing, or NorthEast
+        let me = Point::new(0,0);
+        let them = Point::new(5,5);
+        assert_eq!(me.bearing(&them), GridDirection::NorthEast);
+
+        assert_eq!(Point::new(0,0).bearing(&Point::new(5, 0)), GridDirection::East);
+        assert_eq!(Point::new(0,0).bearing(&Point::new(0,-5)), GridDirection::South);
+        assert_eq!(Point::new(1,1).bearing(&Point::new(-1,-1)), GridDirection::SouthWest);
+        assert_eq!(Point::new(5,10).bearing(&Point::new(1,6)), GridDirection::SouthWest);
+        assert_eq!(Point::new(0,0).bearing(&Point::new(0, 5)), GridDirection::North);
+        assert_eq!(Point::new(6, 8).bearing(&Point::new(10, 4)), GridDirection::SouthEast);
+        assert_eq!(Point::new(9, 11).bearing(&Point::new(4, 11)), GridDirection::West);
     }
 }

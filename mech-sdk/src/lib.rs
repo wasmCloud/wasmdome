@@ -114,12 +114,11 @@ impl MechInstruments for WasmdomeMechInstruments {
     }
 
     fn power(&self) -> u32 {
-        unimplemented!()
+        domaincommon::state::APS_PER_TURN
     }
-
-    // TODO: implement this based on the low-resolution system with only 8 angles (cardinal points)
-    fn direction_to(&self, _target: &Point) -> GridDirection {
-        unimplemented!()
+    
+    fn direction_to(&self, target: &Point) -> GridDirection {        
+        self.current_mech().position.bearing(target)
     }
 
     fn primary_range(&self) -> u32 {
