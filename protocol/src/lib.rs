@@ -2,7 +2,7 @@
 extern crate serde_derive;
 
 pub mod events {
-    use domaincommon as domain;
+    use wasmdome_domain as domain;
 
     // 💩💩💩 This is an annoying hack to get around the restriction that you can't use
     // 💩💩💩 format! with a string constant, so instead we use a macro to generate
@@ -52,6 +52,7 @@ pub mod events {
 }
 
 pub mod commands {
+    use wasmdome_domain as domain;
 
     #[macro_export]
     macro_rules! turns_subject {
@@ -72,7 +73,7 @@ pub mod commands {
         pub actor: String,
         pub match_id: String,
         pub turn: u32,
-        pub state: domaincommon::state::MatchState,
+        pub state: domain::state::MatchState,
     }
 
     /// Requests that a given actor be scheduled for a given match (auction style)

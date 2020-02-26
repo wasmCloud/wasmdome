@@ -93,23 +93,12 @@ dependencies = [
 name = "command-processor"
 version = "0.0.1"
 dependencies = [
- "domaincommon",
  "eventsourcing",
  "serde",
  "serde_json",
  "wascc-actor",
+ "wasmdome-domain",
  "wasmdome-protocol",
-]
-
-[[package]]
-name = "domaincommon"
-version = "0.1.0"
-dependencies = [
- "eventsourcing",
- "eventsourcing-derive",
- "serde",
- "serde_derive",
- "serde_json",
 ]
 
 [[package]]
@@ -590,9 +579,9 @@ dependencies = [
 
 [[package]]
 name = "wascc-actor"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deaedaa71d2acab9d070a9adb706a718a980e14ea64f7b522ee4f9ce298fef70"
+checksum = "7fd1d270ce40f189156cde3137144023a286a7af6600a1b1d8e7aa69ddeb45e8"
 dependencies = [
  "prost 0.6.1",
  "prost-types 0.6.1",
@@ -605,9 +594,9 @@ dependencies = [
 
 [[package]]
 name = "wascc-codec"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "784bbff6489ea978dad99cc48a4a491afd0b72cbe45af886e3c3aad87faeb6e0"
+checksum = "45cad687fdbb5776fa15df3399315083912aae3b03018af89e1ca061103c1b29"
 dependencies = [
  "bytes 0.5.4",
  "prost 0.6.1",
@@ -625,13 +614,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
-name = "wasmdome-protocol"
+name = "wasmdome-domain"
 version = "0.0.1"
 dependencies = [
- "domaincommon",
+ "eventsourcing",
+ "eventsourcing-derive",
  "serde",
  "serde_derive",
  "serde_json",
+]
+
+[[package]]
+name = "wasmdome-protocol"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "wasmdome-domain",
 ]
 
 [[package]]

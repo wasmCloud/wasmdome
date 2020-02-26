@@ -1,10 +1,16 @@
 [package]
-name = "domaincommon"
-version = "0.1.0"
+name = "wasmdome-domain"
+description = "Event Sourced Domain Model for the 'Assembly Mechs: Beyond WasmDome' Game"
+version = "0.0.1"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
+homepage = "https://wascc.dev"
+license = "Apache-2.0"
+documentation = "https://docs.rs/wascc-host"
+readme = "README.md"
+keywords = ["webassembly", "wasmdome", "wascc", "eventsourcing"]
+categories = ["wasm", "games"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 eventsourcing = "0.1.4"

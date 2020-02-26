@@ -14,10 +14,11 @@
 
 extern crate wascc_actor as actor;
 use actor::prelude::*;
+use wasmdome_domain as domain;
+
 use domain::{commands::MechCommand, state::Match};
-use domaincommon as domain;
-use domaincommon::events::GameEvent;
-use domaincommon::state::MatchState;
+use domain::events::GameEvent;
+use domain::state::MatchState;
 use eventsourcing::Aggregate;
 use protocol::events::MatchEvent;
 use wasmdome_protocol as protocol;
