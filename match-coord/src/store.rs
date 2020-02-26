@@ -1,5 +1,5 @@
-use domaincommon as domain;
 use wascc_actor::prelude::*;
+use wasmdome_domain as domain;
 
 pub(crate) fn load_state(
     ctx: &CapabilitiesContext,

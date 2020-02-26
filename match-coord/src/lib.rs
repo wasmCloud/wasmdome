@@ -17,9 +17,9 @@ extern crate wascc_actor as actor;
 extern crate wasmdome_protocol as protocol;
 
 use actor::prelude::*;
-use domaincommon as domain;
 use protocol::commands::*;
 use protocol::events::*;
+use wasmdome_domain as domain;
 
 mod store;
 
@@ -155,7 +155,7 @@ fn is_match_ready(
 ) -> ::std::result::Result<bool, Box<dyn ::std::error::Error>> {
     let raw = ctx.kv().get(&format!("match:{}", match_id))?;
     Ok(raw.map_or(false, |v| {
-        let state: domaincommon::state::MatchState = serde_json::from_str(&v).unwrap();
+        let state: domain::state::MatchState = serde_json::from_str(&v).unwrap();
         state.parameters.actors.len() == state.mechs.len()
     }))
 }
