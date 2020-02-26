@@ -3,17 +3,17 @@ name = "wasmdome-protocol"
 version = "0.0.1"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
-homepage = "https://wascc.dev"
-description = "Assembly Mechs: Beyond WasmDome - shared communication protocol"
+homepage = "https://wasmdome.dev"
+description = "Shared Communication Protocol for the 'Assembly Mechs: Beyond WasmDome' Game"
 license = "Apache-2.0"
 documentation = "https://wasmdome.dev"
 readme = "README.md"
-keywords = ["webassembly", "wasm", "wasi", "wascc", "wapc"]
-categories = ["wasm", "api-bindings","command-line-utilities"]
+keywords = ["webassembly", "wasm", "wasmdome", "wascc"]
+categories = ["wasm", "games"]
 
 
 [dependencies]
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-wasmdome-domain = { path = "../domaincommon" }
+wasmdome-domain = "0.0.1"
