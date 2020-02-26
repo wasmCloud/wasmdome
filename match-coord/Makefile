@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/match_coord.wasm $(DEBUG)/match_coord_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -n "WasmDome Match Coordinator"
+	wascap sign $(DEBUG)/match_coord.wasm $(DEBUG)/match_coord_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -c wascc:extras -n "WasmDome Match Coordinator"
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/match_coord.wasm $(RELEASE)/match_coord_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -n "WasmDome Match Coordinator"
+	wascap sign $(RELEASE)/match_coord.wasm $(RELEASE)/match_coord_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -c wascc:extras -n "WasmDome Match Coordinator"
 	
 keys: keys-account
 keys: keys-module
