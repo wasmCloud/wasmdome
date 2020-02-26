@@ -1,14 +1,17 @@
 #[macro_use]
 extern crate log;
 
-use domaincommon::commands::MechCommand;
+use wasmdome_domain as common;
+
+use common::commands::MechCommand;
+use wasmdome_protocol as protocol;
 
 use natsclient::*;
 use std::path::PathBuf;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use wascc_host::{host, NativeCapability};
-use wasmdome_protocol as protocol;
+use wascc_host::{host, NativeCapability, Actor};
+
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(
@@ -42,15 +45,16 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
             let schedule_req: protocol::commands::ScheduleActor =
                 serde_json::from_slice(&msg.payload).unwrap();
             info!("Received actor schedule request [{:?}].", schedule_req);
-            // TODO: replace this fakery with real scheduling
+            
+            host::add_actor(Actor::from_gantry(&schedule_req.actor).unwrap()).unwrap(); // TODO: kill unwrap
+
             let scheduled = protocol::events::MatchEvent::ActorStarted {
                 name: format!("{}'s Mech", schedule_req.actor),
-                avatar: "none".to_string(),
-                team: "earth".to_string(),
+                avatar: "none".to_string(), // TODO: figure out where to get this from
+                team: "earth".to_string(), // TODO: figure out how to determine npc or player (earth)
                 actor: schedule_req.actor.clone(),
                 match_id: schedule_req.match_id.clone(),
-            };
-            ::std::thread::sleep(::std::time::Duration::from_millis(3000));
+            };            
             c.publish(
                 &format!("wasmdome.match_events.{}", schedule_req.match_id),
                 &serde_json::to_vec(&scheduled).unwrap(),
@@ -86,13 +90,13 @@ fn take_fake_turn(actor: &str, turn: u32, match_id: &str) -> protocol::events::M
         MechCommand::Move {
             turn,
             mech: "al".to_string(),
-            direction: domaincommon::GridDirection::North,
+            direction: common::GridDirection::North,
         }
     } else if actor == "al" {
         MechCommand::FireSecondary {
             mech: "al".to_string(),
             turn,
-            direction: domaincommon::GridDirection::South,
+            direction: common::GridDirection::South,
         }
     } else {
         MechCommand::RequestRadarScan {

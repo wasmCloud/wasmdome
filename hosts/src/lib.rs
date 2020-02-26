@@ -1,2 +1,2 @@
 #[macro_use]
-extern crate domaincommon as common;
+extern crate wasmdome_domain as common;
