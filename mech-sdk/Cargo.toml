@@ -8,8 +8,8 @@ license = "Apache-2.0"
 homepage = "https://wasmdome.dev"
 documentation = "https://docs.rs/wasmdome-mech-sdk"
 readme = "README.md"
-keywords = ["wapc", "webassembly", "wasm", "wascc"]
-categories = ["wasm", "api-bindings", "games"]
+keywords = ["wasmdome", "webassembly", "wasm", "wascc"]
+categories = ["wasm", "games", "api-bindings"]
 
 [dependencies]
 wascc-actor = "0.2.1"
@@ -19,5 +19,5 @@ serde_json = "1.0.48"
 serde_derive = "1.0.104"
 serde = "1.0.104"
 prost-types = "0.6.1"
-wasmdome-protocol = { path = "../protocol" }
-domaincommon = { path = "../domaincommon" }
+wasmdome-protocol = "0.0.1"
+wasmdome-domain = "0.0.1"

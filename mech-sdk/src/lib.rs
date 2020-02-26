@@ -10,8 +10,14 @@
 //!
 //! mech_handler!(handler);
 //!
+//! // Respond to a request to take a turn
 //! pub fn handler(mech: impl MechInstruments) -> Vec<MechCommand> {
-//!     vec![]
+//!     // Respond with up to 4 action points worth of actions
+//!     vec![
+//!         mech.request_radar(),
+//!         mech.move_mech(GridDirection::North),
+//!         mech.fire_primary(GridDirection::South),
+//!     ]
 //! }
 //!
 //! ```
@@ -19,10 +25,12 @@
 pub extern crate wascc_actor;
 pub extern crate wasmdome_protocol as protocol;
 
-use domaincommon::GridDirection;
-pub use domaincommon::commands::MechCommand;
-use domaincommon::state::MechState;
-use domaincommon::Point;
+use wasmdome_domain as domain;
+
+pub use domain::commands::MechCommand;
+use domain::state::MechState;
+pub use domain::GridDirection;
+use domain::Point;
 
 #[macro_export]
 macro_rules! mech_handler {
@@ -52,7 +60,7 @@ macro_rules! mech_handler {
             } else {
                 Vec::new()
             };
-            vec.push(MechCommand::FinishTurn{
+            vec.push(MechCommand::FinishTurn {
                 mech: take_turn.actor.clone(),
                 turn: take_turn.turn,
             });
@@ -83,6 +91,13 @@ pub trait MechInstruments {
     fn secondary_range(&self) -> u32;
     fn last_radar_scan(&self) -> Option<Vec<RadarPing>>;
     fn direction_to(&self, target: &Point) -> GridDirection;
+
+    //- Generate commands
+
+    fn request_radar(&self) -> MechCommand;
+    fn fire_primary(&self, dir: GridDirection) -> MechCommand;
+    fn fire_secondary(&self, dir: GridDirection) -> MechCommand;
+    fn move_mech(&self, dir: GridDirection) -> MechCommand;
 }
 
 pub struct RadarPing {
@@ -123,19 +138,50 @@ impl MechInstruments for WasmdomeMechInstruments {
     }
 
     fn power(&self) -> u32 {
-        domaincommon::state::APS_PER_TURN
+        domain::state::APS_PER_TURN
     }
-    
-    fn direction_to(&self, target: &Point) -> GridDirection {        
+
+    fn direction_to(&self, target: &Point) -> GridDirection {
         self.current_mech().position.bearing(target)
     }
 
     fn primary_range(&self) -> u32 {
-        domaincommon::state::PRIMARY_RANGE as u32
+        domain::state::PRIMARY_RANGE as u32
     }
 
     fn secondary_range(&self) -> u32 {
-        domaincommon::state::SECONDARY_RANGE as u32
+        domain::state::SECONDARY_RANGE as u32
+    }
+
+    fn request_radar(&self) -> MechCommand {
+        MechCommand::RequestRadarScan {
+            turn: self.turn.turn,
+            mech: self.actor.to_string(),
+        }
+    }
+
+    fn fire_primary(&self, dir: GridDirection) -> MechCommand {
+        MechCommand::FirePrimary {
+            turn: self.turn.turn,
+            mech: self.actor.to_string(),
+            direction: dir,
+        }
+    }
+
+    fn fire_secondary(&self, dir: GridDirection) -> MechCommand {
+        MechCommand::FireSecondary {
+            turn: self.turn.turn,
+            mech: self.actor.to_string(),
+            direction: dir,
+        }
+    }
+
+    fn move_mech(&self, dir: GridDirection) -> MechCommand {
+        MechCommand::Move {
+            turn: self.turn.turn,
+            mech: self.actor.to_string(),
+            direction: dir,
+        }
     }
 
     fn last_radar_scan(&self) -> Option<Vec<RadarPing>> {
