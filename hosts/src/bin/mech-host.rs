@@ -46,12 +46,22 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
                 serde_json::from_slice(&msg.payload).unwrap();
             info!("Received actor schedule request [{:?}].", schedule_req);
             
-            host::add_actor(Actor::from_gantry(&schedule_req.actor).unwrap()).unwrap(); // TODO: kill unwrap
-
+            let actor = Actor::from_gantry(&schedule_req.actor).unwrap();
+            let team = if actor.tags().contains(&"npc".to_string()) {
+                "boylur".to_string()
+            } else {
+                "earth".to_string()
+            };
+            let avatar = match actor.tags().iter().find(|t| t.starts_with("avatar-")) {
+                Some(t) => t.replace("avatar-", ""),
+                None => "none".to_string()
+            };
+            host::add_actor(actor).unwrap(); // TODO: kill unwrap
+            
             let scheduled = protocol::events::MatchEvent::ActorStarted {
                 name: format!("{}'s Mech", schedule_req.actor),
-                avatar: "none".to_string(), // TODO: figure out where to get this from
-                team: "earth".to_string(), // TODO: figure out how to determine npc or player (earth)
+                avatar: avatar,
+                team: team,
                 actor: schedule_req.actor.clone(),
                 match_id: schedule_req.match_id.clone(),
             };            
