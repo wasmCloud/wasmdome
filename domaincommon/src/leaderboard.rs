@@ -12,8 +12,8 @@ const POINTS_MATCH_SURVIVE: usize = 2000;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LeaderboardData {
-    scores: HashMap<String, usize>,
-    generation: u64,
+    pub scores: HashMap<String, usize>,
+    pub generation: u64,
 }
 
 impl AggregateState for LeaderboardData {
