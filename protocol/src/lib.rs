@@ -28,7 +28,7 @@ pub mod events {
             actor: String,
             match_id: String,
             name: String,
-            avatar: String, 
+            avatar: String,
             team: String,
         },
         MatchStarted {
