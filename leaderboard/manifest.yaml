@@ -1,0 +1,23 @@
+# An example manifest for running the leaderboard actor in a waSCC generic host
+---
+actors:
+    - ./target/wasm32-unknown-unknown/release/leaderboard_signed.wasm
+capabilities:
+    - ../../wascc-host/examples/.assets/libredis_provider.so
+    - ../../wascc-host/examples/.assets/libwascc_httpsrv.so
+    - ../../wascc-host/examples/.assets/libnats_provider.so
+config:
+    - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
+      capability: "wascc:keyvalue"
+      values:
+        URL: redis://127.0.0.1:6379
+    - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
+      capability: "wascc:http_server"
+      values:
+        PORT: "8081"
+    - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
+      capability: "wascc:messaging"
+      values:
+        SUBSCRIPTION: "wasmdome.match_events.*"
+        URL: "nats://localhost:4222"
+

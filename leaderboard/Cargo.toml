@@ -1,0 +1,20 @@
+[package]
+name = "leaderboard"
+version = "0.0.1"
+authors = ["Kevin Hoffman <alothien@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wascc-actor = "0.2.1"
+wasmdome-protocol = "0.0.2"
+wasmdome-domain = "0.0.2"
+serde = "1.0"
+serde_json = "1.0"
+eventsourcing = "0.1.4"
+
+[profile.release]
+# Optimize for small code size
+opt-level = "s"
