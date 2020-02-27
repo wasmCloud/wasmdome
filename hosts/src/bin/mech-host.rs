@@ -10,8 +10,7 @@ use natsclient::*;
 use std::path::PathBuf;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use wascc_host::{host, NativeCapability, Actor};
-
+use wascc_host::{host, Actor, NativeCapability};
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(
@@ -45,26 +44,39 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
             let schedule_req: protocol::commands::ScheduleActor =
                 serde_json::from_slice(&msg.payload).unwrap();
             info!("Received actor schedule request [{:?}].", schedule_req);
-            
-            let actor = Actor::from_gantry(&schedule_req.actor).unwrap();
-            let team = if actor.tags().contains(&"npc".to_string()) {
-                "boylur".to_string()
+
+            let (team, avatar, name) = if host::actor_claims(&schedule_req.actor).is_none() {
+                info!("Starting new actor");
+                let actor = Actor::from_gantry(&schedule_req.actor).unwrap();
+
+                let t = get_team(&actor.tags());
+                let a = get_avatar(&actor.tags());
+                let name = actor.name();
+                host::add_actor(actor).unwrap(); // TODO: kill unwrap
+                (t, a, name)
             } else {
-                "earth".to_string()
+                info!("Acknowledging start for existing actor");
+                let claims = host::actor_claims(&schedule_req.actor).unwrap();
+                (
+                    get_team(&claims.metadata.as_ref().unwrap().tags.as_ref().unwrap()),
+                    get_avatar(&claims.metadata.as_ref().unwrap().tags.as_ref().unwrap()),
+                    claims
+                        .metadata
+                        .as_ref()
+                        .unwrap()
+                        .name
+                        .as_ref()
+                        .map_or("Unnamed".to_string(), |n| n.to_string()),
+                )
             };
-            let avatar = match actor.tags().iter().find(|t| t.starts_with("avatar-")) {
-                Some(t) => t.replace("avatar-", ""),
-                None => "none".to_string()
-            };
-            host::add_actor(actor).unwrap(); // TODO: kill unwrap
-            
+
             let scheduled = protocol::events::MatchEvent::ActorStarted {
-                name: format!("{}'s Mech", schedule_req.actor),
+                name,
                 avatar: avatar,
                 team: team,
                 actor: schedule_req.actor.clone(),
                 match_id: schedule_req.match_id.clone(),
-            };            
+            };
             c.publish(
                 &format!("wasmdome.match_events.{}", schedule_req.match_id),
                 &serde_json::to_vec(&scheduled).unwrap(),
@@ -93,6 +105,21 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
 
     std::thread::park();
     Ok(())
+}
+
+fn get_team(tags: &Vec<String>) -> String {
+    if tags.contains(&"npc".to_string()) {
+        "boylur".to_string()
+    } else {
+        "earth".to_string()
+    }
+}
+
+fn get_avatar(tags: &Vec<String>) -> String {
+    match tags.iter().find(|t| t.starts_with("avatar-")) {
+        Some(t) => t.replace("avatar-", ""),
+        None => "none".to_string(),
+    }
 }
 
 fn take_fake_turn(actor: &str, turn: u32, match_id: &str) -> protocol::events::MatchEvent {

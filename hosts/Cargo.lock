@@ -758,9 +758,9 @@ dependencies = [
 
 [[package]]
 name = "gantryclient"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "233b263309ff369700d7848e941a5a2246a0ba9ecc32ccf19af5dd6072a43737"
+checksum = "941ebaa83c715ee7c5e6b8708d5219cc6f45cf7e97247d5c21551da11c4ebe5e"
 dependencies = [
  "crossbeam",
  "gantry-protocol",
