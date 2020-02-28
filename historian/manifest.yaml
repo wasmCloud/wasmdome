@@ -1,0 +1,18 @@
+# An example manifest for running the historian actor in a waSCC generic host
+---
+actors:
+    - ./target/wasm32-unknown-unknown/release/historian_signed.wasm
+capabilities:
+    - ../../wascc-host/examples/.assets/libredis_streams_provider.so    
+    - ../../wascc-host/examples/.assets/libnats_provider.so
+config:
+    - actor: "MCRXNIHCTMNAGRMS4BKENM2DTKXKSKCTEK2M2P7MBNLK4AQRIIXR6G66"
+      capability: "wascc:eventstreams"
+      values:
+        URL: redis://127.0.0.1:6379    
+    - actor: "MCRXNIHCTMNAGRMS4BKENM2DTKXKSKCTEK2M2P7MBNLK4AQRIIXR6G66"
+      capability: "wascc:messaging"
+      values:
+        SUBSCRIPTION: "wasmdome.match_events.*,wasmdome.history.replay"
+        URL: "nats://localhost:4222"
+
