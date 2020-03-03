@@ -566,9 +566,9 @@ checksum = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
 
 [[package]]
 name = "wapc-guest"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e54b0829ad79eabe62b538b11ac48e1811627ab5cdf3c433c363bcdddce81745"
+checksum = "6e5f000a6a1770d032fd3378c65c283de8633b009f3018cace1a1446785cf2e1"
 dependencies = [
  "prost 0.5.0",
  "prost-types 0.5.0",
@@ -579,9 +579,9 @@ dependencies = [
 
 [[package]]
 name = "wascc-actor"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fd1d270ce40f189156cde3137144023a286a7af6600a1b1d8e7aa69ddeb45e8"
+checksum = "6d7a5003ae0196264f2253d75ec78d924233960b5a2f216bcfd2da2bccddbcfe"
 dependencies = [
  "prost 0.6.1",
  "prost-types 0.6.1",
@@ -594,9 +594,9 @@ dependencies = [
 
 [[package]]
 name = "wascc-codec"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45cad687fdbb5776fa15df3399315083912aae3b03018af89e1ca061103c1b29"
+checksum = "d57815b89a048dda5f64cf619b043b9656b92e88b01feafccd2317163cf95068"
 dependencies = [
  "bytes 0.5.4",
  "prost 0.6.1",
@@ -615,9 +615,9 @@ checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a8bf2978b9f37140b2c1c0cf9121df57f0bc81fdcce110fdfefafe19b185988"
+checksum = "f7e90dd8b8749805f20e71aeded67bc9c9258a8680bc2b5c2377d7d3d8efa06e"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
@@ -628,9 +628,9 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-protocol"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5619a3e9c0d4f2494c10e721399bc73c6c58e418dac7b540d5d6df383ca135d7"
+checksum = "8a174542470af4ccdcfc17724016324fec4e37f28890ec91bbd3f55d8a43a6ac"
 dependencies = [
  "serde",
  "serde_derive",
