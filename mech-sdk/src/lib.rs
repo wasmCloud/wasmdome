@@ -31,6 +31,7 @@ pub use domain::commands::MechCommand;
 use domain::state::MechState;
 pub use domain::GridDirection;
 use domain::Point;
+use wascc_actor::CapabilitiesContext;
 
 #[macro_export]
 macro_rules! mech_handler {
@@ -39,20 +40,17 @@ macro_rules! mech_handler {
         use protocol::events::MatchEvent;
         use $crate::wascc_actor::prelude::*;
 
-        actor_receive!(handle_wascc);
-        fn handle_wascc(ctx: &CapabilitiesContext, operation: &str, msg: &[u8]) -> CallResult {
-            match operation {
-                messaging::OP_DELIVER_MESSAGE => handle_message(ctx, msg),
-                core::OP_HEALTH_REQUEST => Ok(vec![]),
-                _ => Err(format!("Mech Handler: Unrecognized operation: {}", operation).into()),
-            }
+        actor_handlers!{ messaging::OP_DELIVER_MESSAGE => handle_message, core::OP_HEALTH_REQUEST => health }        
+
+        fn health(_ctx: &CapabilitiesContext, _req: core::HealthRequest) -> ReceiveResult {
+            Ok(vec![])
         }
 
         fn handle_message(
             ctx: &CapabilitiesContext,
-            msg: impl Into<messaging::DeliverMessage>,
+            msg: messaging::DeliverMessage,
         ) -> CallResult {
-            let take_turn: TakeTurn = serde_json::from_slice(&msg.into().message.unwrap().body)?;
+            let take_turn: TakeTurn = serde_json::from_slice(&msg.message.body)?;
             let mech =
                 $crate::WasmdomeMechInstruments::new(take_turn.clone(), take_turn.actor.clone());
             let mut vec = if mech.is_alive() {
@@ -91,6 +89,7 @@ pub trait MechInstruments {
     fn secondary_range(&self) -> u32;
     fn last_radar_scan(&self) -> Option<Vec<RadarPing>>;
     fn direction_to(&self, target: &Point) -> GridDirection;
+    fn random_number(&self, min: u32, max: u32) -> u32;
 
     //- Generate commands
 
@@ -110,11 +109,12 @@ pub struct RadarPing {
 pub struct WasmdomeMechInstruments {
     actor: String,
     turn: protocol::commands::TakeTurn,
+    ctx: CapabilitiesContext,
 }
 
 impl WasmdomeMechInstruments {
     pub fn new(turn: protocol::commands::TakeTurn, actor: String) -> Self {
-        WasmdomeMechInstruments { turn, actor }
+        WasmdomeMechInstruments { turn, actor, ctx: CapabilitiesContext::default() }
     }
 }
 
@@ -196,5 +196,12 @@ impl MechInstruments for WasmdomeMechInstruments {
                 })
                 .collect()
         })
+    }
+
+    fn random_number(&self, min: u32, max: u32) -> u32 {
+        match self.ctx.extras().get_random(min, max) {
+            Ok(r) => r,
+            Err(_) => 0
+        }
     }
 }
