@@ -1645,6 +1645,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "rmp"
+version = "0.8.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f10b46df14cf1ee1ac7baa4d2fbc2c52c0622a4b82fa8740e37bc452ac0184f"
+dependencies = [
+ "byteorder",
+ "num-traits",
+]
+
+[[package]]
+name = "rmp-serde"
+version = "0.14.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c1ee98f14fe8b8e9c5ea13d25da7b2a1796169202c57a09d7288de90d56222b"
+dependencies = [
+ "byteorder",
+ "rmp",
+ "serde",
+]
+
+[[package]]
 name = "rust-argon2"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2209,14 +2230,11 @@ dependencies = [
 
 [[package]]
 name = "wascc-codec"
-version = "0.4.2"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d57815b89a048dda5f64cf619b043b9656b92e88b01feafccd2317163cf95068"
+checksum = "1477019e4e1de84d0e77380859906e132bdd1e8dbf73f3dd81dc27eeeb554ace"
 dependencies = [
- "bytes",
- "prost",
- "prost-build",
- "prost-types",
+ "rmp-serde",
  "serde",
  "serde_derive",
  "serde_json",
@@ -2224,9 +2242,9 @@ dependencies = [
 
 [[package]]
 name = "wascc-host"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3404a94c5cd577ff78a80bfd6418da3752318dc4d766021d5872df189a385df4"
+checksum = "6324b44b5e50be34b1e84c2aa45dca8c69ea50c1ca20b9b15b8592b1eaf08662"
 dependencies = [
  "crossbeam",
  "crossbeam-channel",
@@ -2236,7 +2254,6 @@ dependencies = [
  "lazy_static",
  "libloading",
  "log",
- "prost",
  "quicli",
  "rand 0.7.3",
  "serde",

@@ -24,11 +24,3 @@ pub fn handler(mech: impl MechInstruments) -> Vec<MechCommand> {
     cmds.push(mech.request_radar());
     cmds
 }
-
-#[cfg(test)]
-mod test {
-     #[test]
-     fn it_works() {
-          assert!(true);
-     }
-}

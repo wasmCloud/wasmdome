@@ -8,21 +8,17 @@ const SUBJECT_TRIGGER_REPLAY: &str = "wasmdome.history.replay";
 use actor::prelude::*;
 use std::collections::HashMap;
 
-actor_receive!(receive);
+actor_handlers!{ messaging::OP_DELIVER_MESSAGE => handle_message, core::OP_HEALTH_REQUEST => health }
 
-pub fn receive(ctx: &CapabilitiesContext, operation: &str, msg: &[u8]) -> ReceiveResult {
-    match operation {
-        messaging::OP_DELIVER_MESSAGE => handle_message(ctx, msg),
-        core::OP_HEALTH_REQUEST => Ok(vec![]),
-        _ => Err("Unknown operation".into()),
-    }
+fn health(_ctx: &CapabilitiesContext, _req: core::HealthRequest) -> ReceiveResult {
+    Ok(vec![])
 }
 
 fn handle_message(
     ctx: &CapabilitiesContext,
-    msg: impl Into<messaging::DeliverMessage>,
+    msg: messaging::DeliverMessage,
 ) -> ReceiveResult {
-    let msg = msg.into().message.unwrap();
+    let msg = msg.message;
     // This if statement is order sensitive since both these subjects have the same prefix. 
     // BEWARE.
     if msg.subject == SUBJECT_TRIGGER_REPLAY {

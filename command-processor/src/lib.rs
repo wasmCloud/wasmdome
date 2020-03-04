@@ -23,21 +23,17 @@ use eventsourcing::Aggregate;
 use protocol::events::MatchEvent;
 use wasmdome_protocol as protocol;
 
-actor_receive!(receive);
+actor_handlers! { messaging::OP_DELIVER_MESSAGE => handle_message, core::OP_HEALTH_REQUEST => health }
 
-pub fn receive(ctx: &CapabilitiesContext, operation: &str, msg: &[u8]) -> ReceiveResult {
-    match operation {
-        messaging::OP_DELIVER_MESSAGE => handle_message(ctx, msg),
-        core::OP_HEALTH_REQUEST => Ok(vec![]),
-        _ => Err("Unknown operation".into()),
-    }
+fn health(_ctx: &CapabilitiesContext, _req: core::HealthRequest) -> ReceiveResult {
+    Ok(vec![])
 }
 
 fn handle_message(
     ctx: &CapabilitiesContext,
-    msg: impl Into<messaging::DeliverMessage>,
+    msg: messaging::DeliverMessage,
 ) -> ReceiveResult {
-    let msg = msg.into().message.unwrap();
+    let msg = msg.message;    
     if msg
         .subject
         .starts_with(protocol::events::SUBJECT_MATCH_EVENTS_PREFIX)
