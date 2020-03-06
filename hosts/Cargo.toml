@@ -5,7 +5,7 @@ authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-wascc-host = "0.5.0"
+wascc-host = "0.5.1"
 #wascc-host = { path = "../../wascc-host" }
 serde_json = "1.0.48"
 nkeys = "0.0.8"
@@ -13,7 +13,7 @@ serde = "1.0.104"
 log = "0.4.8"
 env_logger = "0.7.1"
 quicli = "0.4"
-structopt = "0.3.9"
+structopt = "0.3.11"
 natsclient = "0.0.6"
-wasmdome-protocol = "0.0.1"
-wasmdome-domain = "0.0.1"
+wasmdome-protocol = "0.0.2"
+wasmdome-domain = "0.0.2"

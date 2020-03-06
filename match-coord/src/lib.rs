@@ -99,7 +99,15 @@ fn spawn_actor(
         team,
         position: spawnpoint,
     };
+    let subject = format!(protocol::match_events_subject!(), match_id);
     for event in domain::state::Match::handle_command(&state, &cmd).unwrap() {
+        let turn_event = protocol::events::MatchEvent::TurnEvent{
+            actor: actor.to_string(),
+            match_id: match_id.to_string(),
+            turn: 0,
+            turn_event: event.clone(),
+        };
+        ctx.msg().publish(&subject, None, &serde_json::to_vec(&turn_event)?)?;
         state = domain::state::Match::apply_event(&state, &event).unwrap();
     }
 
