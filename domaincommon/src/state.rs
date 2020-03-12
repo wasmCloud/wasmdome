@@ -7,9 +7,9 @@ use eventsourcing::Result;
 use eventsourcing::{Aggregate, AggregateState};
 use std::collections::HashMap;
 
-const WALL_DAMAGE: u32 = 10; // Lose 10 HP for bouncing off obstacles
-const PRIMARY_DAMAGE: u32 = 75;
-const SECONDARY_DAMAGE: u32 = 110;
+const WALL_DAMAGE: u32 = 50; // Lose HP for bouncing off obstacles
+const PRIMARY_DAMAGE: u32 = 100;
+const SECONDARY_DAMAGE: u32 = 140;
 const SECONDARY_SPLASH_DAMAGE: u32 = 90;
 
 const INITIAL_HEALTH: u32 = 1000;
@@ -104,6 +104,27 @@ impl MatchState {
             .values()
             .find(|m| m.position == *position)
             .cloned()
+    }
+
+    pub(crate) fn nearest_unoccupied(state: &MatchState, position: &Option<Point>) -> Option<Point> {
+        if let Some(position) = position {        
+            if Self::mech_at(state, position).is_some() {
+                vec![
+                    position.relative_point(&state.game_board, &GridDirection::North, 1),
+                    position.relative_point(&state.game_board, &GridDirection::NorthEast, 1),
+                    position.relative_point(&state.game_board, &GridDirection::East, 1),
+                    position.relative_point(&state.game_board, &GridDirection::SouthEast, 1),
+                    position.relative_point(&state.game_board, &GridDirection::South, 1),
+                    position.relative_point(&state.game_board, &GridDirection::SouthWest, 1),
+                    position.relative_point(&state.game_board, &GridDirection::West, 1),
+                    position.relative_point(&state.game_board, &GridDirection::NorthWest, 1),
+                ].iter().find_map(|p| Self::nearest_unoccupied(state, p))
+            } else {
+                Some(position.clone())
+            }
+        } else {
+            None
+        }
     }
 
     fn insert_mech(
@@ -254,7 +275,7 @@ impl Aggregate for Match {
                 name,
             } => Ok(vec![GameEvent::MechSpawned {
                 mech: mech.to_string(),
-                position: position.clone(),
+                position: MatchState::nearest_unoccupied(state, &Some(position.clone())).unwrap(),
                 team: team.to_string(),
                 avatar: avatar.to_string(),
                 name: name.to_string(),
@@ -275,10 +296,20 @@ impl Match {
             .position
             .relative_point(&state.game_board, direction, 1)
         {
-            Some(p) => Ok(vec![GameEvent::PositionUpdated {
-                mech: mech.to_string(),
-                position: p,
-            }]),
+            Some(p) => {
+                if let Some(m) = MatchState::mech_at(state, &p) {
+                    Ok(vec![GameEvent::DamageTaken{
+                        damage: WALL_DAMAGE,
+                        damage_source: DamageSource::MechCollision(m.name.to_string()),
+                        damage_target: mech.to_string(),
+                    }])
+                } else {
+                    Ok(vec![GameEvent::PositionUpdated {
+                        mech: mech.to_string(),
+                        position: p,
+                    }])
+                }                
+            },
             None => Ok(vec![GameEvent::DamageTaken {
                 damage_target: mech.to_string(),
                 damage: WALL_DAMAGE,
@@ -340,7 +371,7 @@ impl Match {
         if targets.len() > 0 {
             evts.extend(Self::do_damage(
                 state,
-                DamageSource::Mech(mech.to_string()),
+                DamageSource::MechWeapon(mech.to_string()),
                 &targets[0].id,
                 PRIMARY_DAMAGE,
                 targets[0].health,
@@ -366,7 +397,7 @@ impl Match {
             // Projectile stopped at a target
             events.extend(Self::do_damage(
                 state,
-                DamageSource::Mech(mech.to_string()),
+                DamageSource::MechWeapon(mech.to_string()),
                 &targets[0].id,
                 SECONDARY_DAMAGE,
                 targets[0].health,
@@ -393,7 +424,7 @@ impl Match {
                     .flat_map(|m| {
                         Self::do_damage(
                             state,
-                            DamageSource::Mech(mech.to_string()),
+                            DamageSource::MechWeapon(mech.to_string()),
                             &m.id,
                             SECONDARY_SPLASH_DAMAGE,
                             m.health,
@@ -853,6 +884,38 @@ mod test {
     }
 
     #[test]
+    fn move_into_occupied_spot_causes_collision_dmg() {
+        let state: MatchState  = gen_root_state(vec![
+            ("al", Point::new(10,6)),
+            ("bob", Point::new(11, 6))
+        ], 10);
+
+        let cmds = vec![
+            MechCommand::Move{
+                direction: GridDirection::East,
+                mech: "al".to_string(),
+                turn: 0
+            }
+        ];
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        assert_eq!(
+            state.mechs["al"].health,
+            INITIAL_HEALTH - WALL_DAMAGE
+        );
+        assert_eq!(
+            state.mechs["al"].position,
+            Point::new(10,6) // he did not move to new location
+        );
+    }
+
+    #[test]
     fn radar_ping_state() {
         let state = gen_root_state(
             vec![
@@ -913,4 +976,55 @@ mod test {
             },]
         )
     }
+
+    #[test]
+    fn nearest_unoccupied() {
+        let state = gen_root_state(
+            vec![
+                ("al", Point::new(10, 6)),
+                ("bob", Point::new(10, 7)),
+                ("steve", Point::new(10, 5)),
+                ("nobody", Point::new(9, 6)),
+            ],
+            10,
+        );
+
+        assert_eq!(None, MatchState::nearest_unoccupied(&state, &None));
+        assert_eq!(Some(Point::new(10,8)), MatchState::nearest_unoccupied(&state, &Some(Point::new(10,7))));
+        assert_eq!(Some(Point::new(9, 7)), MatchState::nearest_unoccupied(&state, &Some(Point::new(9, 6))));
+    }
+
+    #[test]
+    fn cannot_spawn_on_occupied() {
+        let state = gen_root_state(
+            vec![
+                ("al", Point::new(10, 6)),
+                ("bob", Point::new(10, 7)),
+                ("steve", Point::new(10, 5)),
+                ("nobody", Point::new(9, 6)),
+            ],
+            10,
+        );
+
+        let cmds = vec![
+            MechCommand::SpawnMech {
+                position: Point::new(10,6),
+                avatar: "".to_string(),
+                mech: "bounce".to_string(),
+                name: "test".to_string(),
+                team: "earth".to_string(),
+            },            
+        ];
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        assert_eq!(Point::new(10,8), state.mechs["bounce"].position); // Go north until we can't, then find adjacent
+    }
+
+
 }

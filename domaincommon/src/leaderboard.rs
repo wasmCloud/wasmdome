@@ -60,7 +60,7 @@ impl Leaderboard {
         source: DamageSource,
     ) -> eventsourcing::Result<LeaderboardData> {
         let mut state = state.clone();
-        if let DamageSource::Mech(attacker) = source {
+        if let DamageSource::MechWeapon(attacker) = source {
             state
                 .scores
                 .entry(attacker)
@@ -113,11 +113,11 @@ mod test {
     fn award_points_for_kill() {
         let evts = vec![
             GameEvent::MechDestroyed {
-                damage_source: DamageSource::Mech("al".to_string()),
+                damage_source: DamageSource::MechWeapon("al".to_string()),
                 damage_target: "bob".to_string(),
             },
             GameEvent::MechDestroyed {
-                damage_source: DamageSource::Mech("al".to_string()),
+                damage_source: DamageSource::MechWeapon("al".to_string()),
                 damage_target: "steve".to_string(),
             },
         ];

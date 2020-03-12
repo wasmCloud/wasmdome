@@ -211,7 +211,8 @@ pub struct TurnStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DamageSource {
     Wall,
-    Mech(String),
+    MechWeapon(String),
+    MechCollision(String),
 }
 
 #[cfg(test)]
