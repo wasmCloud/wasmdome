@@ -563,12 +563,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dtoa"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4358a9e11b9a09cf52383b451b49a169e8d797b68aa02301ff586d70d9661ea3"
-
-[[package]]
 name = "ed25519"
 version = "1.0.0-pre.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -657,9 +651,9 @@ dependencies = [
 
 [[package]]
 name = "eventsourcing"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce70c6213b078d74396e9715626f591205b112a0866c4ae8fdb641fd0333fcdd"
+checksum = "3e9ff21d2735c276e98e79a264959f8eb3af499c0634636b7a87e560e2ba559e"
 dependencies = [
  "chrono",
  "serde",
@@ -909,7 +903,7 @@ dependencies = [
 
 [[package]]
 name = "hosts"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "env_logger 0.7.1",
  "log",
@@ -1028,12 +1022,6 @@ dependencies = [
  "cc",
  "winapi",
 ]
-
-[[package]]
-name = "linked-hash-map"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae91b68aebc4ddb91978b11a1b02ddd8602a05ec19002801c5666000e05e0f83"
 
 [[package]]
 name = "log"
@@ -1804,18 +1792,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_yaml"
-version = "0.8.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "691b17f19fc1ec9d94ec0b5864859290dff279dbd7b03f017afda54eb36c3c35"
-dependencies = [
- "dtoa",
- "linked-hash-map",
- "serde",
- "yaml-rust",
-]
-
-[[package]]
 name = "sha2"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2214,9 +2190,9 @@ dependencies = [
 
 [[package]]
 name = "wascap"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f016dc358574d9a7b0b64eaebf83dcca2d7d294642873c4e8be391aaa1cda9b5"
+checksum = "3839a08f49ae5be43fd695089262f75b156d5d37c26f31ab19f1089abf1a1770"
 dependencies = [
  "base64",
  "chrono",
@@ -2248,9 +2224,9 @@ dependencies = [
 
 [[package]]
 name = "wascc-host"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dafeb761147b08c6a10f8b81a3edae9da20ccd93d2195b4f95a32a351f17ee8"
+checksum = "3fe3c9fe8cc603b14b8387a4fde748dc6b36905e6c0076f6a64f9f90b17c7bed"
 dependencies = [
  "crossbeam",
  "crossbeam-channel",
@@ -2260,12 +2236,7 @@ dependencies = [
  "lazy_static",
  "libloading",
  "log",
- "quicli",
  "rand 0.7.3",
- "serde",
- "serde_json",
- "serde_yaml",
- "structopt 0.3.11",
  "uuid",
  "wapc",
  "wascap",
@@ -2372,9 +2343,9 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7e90dd8b8749805f20e71aeded67bc9c9258a8680bc2b5c2377d7d3d8efa06e"
+checksum = "0ffe16695d1e73f0c4e43f564e5d461a8af436ed38526c6569465aac63a44d1a"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
@@ -2385,9 +2356,9 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-protocol"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a174542470af4ccdcfc17724016324fec4e37f28890ec91bbd3f55d8a43a6ac"
+checksum = "e7325410a8e7c55cb8a5d7f856de7bbee669b3819e53cb7256e74274fc112e4e"
 dependencies = [
  "serde",
  "serde_derive",
@@ -2650,15 +2621,6 @@ dependencies = [
  "structopt 0.3.11",
  "thiserror",
  "wast",
-]
-
-[[package]]
-name = "yaml-rust"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65923dd1784f44da1d2c3dbbc5e822045628c590ba72123e1c73d3c230c4434d"
-dependencies = [
- "linked-hash-map",
 ]
 
 [[package]]

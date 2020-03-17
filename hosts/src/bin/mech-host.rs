@@ -1,13 +1,10 @@
 #[macro_use]
 extern crate log;
 
-use wasmdome_domain as common;
-
-use common::commands::MechCommand;
 use wasmdome_protocol as protocol;
 
 use natsclient::*;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 use wascc_host::{host, Actor, NativeCapability};
@@ -30,6 +27,11 @@ struct CliCommand {
 }
 
 fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::error::Error>> {
+
+    cmd.provider_paths.iter().for_each(|p| {
+        host::add_native_capability(NativeCapability::from_file(p).unwrap()).unwrap();
+    });
+
     let opts = ClientOptions::builder()
         .cluster_uris(vec!["nats://localhost:4222".into()])
         .authentication(AuthenticationStyle::Anonymous)
@@ -53,6 +55,9 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
                 let a = get_avatar(&actor.tags());
                 let name = actor.name();
                 host::add_actor(actor).unwrap(); // TODO: kill unwrap
+                // Mech actors subscribe to wasmdome.matches.{match}.turns.{actor}
+                host::configure(&schedule_req.actor, 
+                    "wascc:messaging", gen_config(&schedule_req.actor)).unwrap();
                 (t, a, name)
             } else {
                 info!("Acknowledging start for existing actor");
@@ -85,26 +90,17 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
             .unwrap();
             Ok(())
         },
-    )?;
-
-    let c2 = client.clone();
-    // This is a hack for now. the actors will subscribe to their turns list
-    client.subscribe("wasmdome.matches.*.turns.*", move |msg| {
-        let turn: protocol::commands::TakeTurn = serde_json::from_slice(&msg.payload).unwrap();
-        info!("Received take turn command [{:?}]", turn);
-        let ack = take_fake_turn(&turn.actor, turn.turn, &turn.match_id);
-        let subject = format!("wasmdome.match_events.{}", turn.match_id);
-        c2.publish(&subject, &serde_json::to_vec(&ack).unwrap(), None)?;
-        Ok(())
-    })?;
-    //host::add_actor(Actor::from_file(cmd.coordinator_path)?)?;
-
-    cmd.provider_paths.iter().for_each(|p| {
-        host::add_native_capability(NativeCapability::from_file(p).unwrap()).unwrap();
-    });
+    )?;    
 
     std::thread::park();
     Ok(())
+}
+
+fn gen_config(actor: &str) -> HashMap<String, String> {
+    let mut hm = HashMap::new();
+    hm.insert("SUBSCRIPTION".to_string(), format!("wasmdome.matches.*.turns.{}", actor));
+    hm.insert("URL".to_string(), "nats://localhost:4222".to_string());
+    hm
 }
 
 fn get_team(tags: &Vec<String>) -> String {
@@ -119,39 +115,6 @@ fn get_avatar(tags: &Vec<String>) -> String {
     match tags.iter().find(|t| t.starts_with("avatar-")) {
         Some(t) => t.replace("avatar-", ""),
         None => "none".to_string(),
-    }
-}
-
-fn take_fake_turn(actor: &str, turn: u32, match_id: &str) -> protocol::events::MatchEvent {
-    let cmd = if actor == "al" && turn < 3 {
-        MechCommand::Move {
-            turn,
-            mech: "al".to_string(),
-            direction: common::GridDirection::North,
-        }
-    } else if actor == "al" {
-        MechCommand::FireSecondary {
-            mech: "al".to_string(),
-            turn,
-            direction: common::GridDirection::South,
-        }
-    } else {
-        MechCommand::RequestRadarScan {
-            turn,
-            mech: actor.to_string(),
-        }
-    };
-    protocol::events::MatchEvent::TurnRequested {
-        actor: actor.to_string(),
-        turn: turn,
-        match_id: match_id.to_string(),
-        commands: vec![
-            cmd,
-            MechCommand::FinishTurn {
-                mech: actor.to_string(),
-                turn,
-            },
-        ],
     }
 }
 
