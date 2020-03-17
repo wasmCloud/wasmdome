@@ -11,8 +11,17 @@ const POINTS_MATCH_WIN: usize = 10000;
 const POINTS_MATCH_SURVIVE: usize = 2000;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PlayerStats {
+    pub score: usize,
+    pub wins: usize,    
+    pub draws: usize,
+    pub kills: usize,
+    pub deaths: usize,    
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LeaderboardData {
-    pub scores: HashMap<String, usize>,
+    pub stats: HashMap<String, PlayerStats>,
     pub generation: u64,
 }
 
@@ -54,18 +63,36 @@ impl Aggregate for Leaderboard {
 }
 
 impl Leaderboard {
+    // Source kills target
     fn score_mech_death(
         state: &LeaderboardData,
-        _target: String,
+        target: String,
         source: DamageSource,
     ) -> eventsourcing::Result<LeaderboardData> {
         let mut state = state.clone();
         if let DamageSource::MechWeapon(attacker) = source {
             state
-                .scores
+                .stats
                 .entry(attacker)
-                .and_modify(|e| *e += POINTS_DESTROY)
-                .or_insert(POINTS_DESTROY);
+                .and_modify(|e| {
+                    e.score += POINTS_DESTROY;
+                    e.kills += 1;
+                })
+                .or_insert(PlayerStats{
+                    score: POINTS_DESTROY,
+                    kills: 1,
+                    ..Default::default()
+                });
+            state
+                .stats
+                .entry(target)
+                .and_modify(|e| {
+                    e.deaths += 1;
+                })
+                .or_insert(PlayerStats{
+                    deaths: 1,
+                    ..Default::default()
+                });
         }
         state.generation += 1;
 
@@ -79,10 +106,17 @@ impl Leaderboard {
         let mut state = state.clone();
 
         state
-            .scores
+            .stats
             .entry(mech)
-            .and_modify(|e| *e += POINTS_MATCH_WIN)
-            .or_insert(POINTS_MATCH_WIN);
+            .and_modify(|e| {
+                e.score += POINTS_MATCH_WIN;
+                e.wins += 1;
+            })
+            .or_insert(PlayerStats{
+                score: POINTS_MATCH_WIN,
+                wins: 1,
+                ..Default::default()
+            });
 
         state.generation += 1;
         Ok(state)
@@ -96,10 +130,17 @@ impl Leaderboard {
 
         for survivor in survivors {
             state
-                .scores
+                .stats
                 .entry(survivor)
-                .and_modify(|e| *e += POINTS_MATCH_SURVIVE)
-                .or_insert(POINTS_MATCH_SURVIVE);
+                .and_modify(|e| {
+                    e.score += POINTS_MATCH_SURVIVE;
+                    e.draws += 1;
+                })
+                .or_insert(PlayerStats{
+                    score:POINTS_MATCH_SURVIVE,
+                    draws: 1,
+                    ..Default::default()
+                });
         }
         Ok(state)
     }
@@ -126,7 +167,10 @@ mod test {
         let state = evts.iter().fold(state, |state, evt| {
             Leaderboard::apply_event(&state, evt).unwrap()
         });
-        assert_eq!(state.scores["al"], 2 * POINTS_DESTROY);
+        assert_eq!(state.stats["al"].score, 2 * POINTS_DESTROY);
+        assert_eq!(state.stats["al"].kills, 2);
+        assert_eq!(state.stats["bob"].deaths, 1);
+        assert_eq!(state.stats["steve"].deaths, 1);
     }
 
     #[test]
@@ -144,8 +188,10 @@ mod test {
         let state = evts.iter().fold(state, |state, evt| {
             Leaderboard::apply_event(&state, evt).unwrap()
         });
-        assert_eq!(state.scores["al"], POINTS_MATCH_WIN);
-        assert_eq!(state.scores["bob"], POINTS_MATCH_WIN);
+        assert_eq!(state.stats["al"].score, POINTS_MATCH_WIN);
+        assert_eq!(state.stats["bob"].score, POINTS_MATCH_WIN);
+        assert_eq!(state.stats["al"].wins, 1);
+        assert_eq!(state.stats["bob"].wins, 1);
     }
 
     #[test]
@@ -164,7 +210,10 @@ mod test {
         let state = evts.iter().fold(state, |state, evt| {
             Leaderboard::apply_event(&state, evt).unwrap()
         });
-        assert_eq!(state.scores["al"], POINTS_MATCH_WIN + POINTS_MATCH_SURVIVE);
-        assert_eq!(state.scores["bob"], POINTS_MATCH_SURVIVE);
+        assert_eq!(state.stats["al"].score, POINTS_MATCH_WIN + POINTS_MATCH_SURVIVE);
+        assert_eq!(state.stats["bob"].score, POINTS_MATCH_SURVIVE);
+        assert_eq!(state.stats["al"].draws, 1);
+        assert_eq!(state.stats["bob"].draws, 1);
+        assert_eq!(state.stats["al"].wins, 1);
     }
 }

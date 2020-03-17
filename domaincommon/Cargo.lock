@@ -20,9 +20,9 @@ dependencies = [
 
 [[package]]
 name = "eventsourcing"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce70c6213b078d74396e9715626f591205b112a0866c4ae8fdb641fd0333fcdd"
+checksum = "3e9ff21d2735c276e98e79a264959f8eb3af499c0634636b7a87e560e2ba559e"
 dependencies = [
  "chrono",
  "serde",
@@ -194,7 +194,7 @@ checksum = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
