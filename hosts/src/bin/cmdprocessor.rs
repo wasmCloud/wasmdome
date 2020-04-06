@@ -3,7 +3,7 @@ extern crate log;
 use std::{collections::HashMap, path::PathBuf};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use wascc_host::{host, Actor, NativeCapability};
+use wascc_host::{Actor, NativeCapability, WasccHost};
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(
@@ -27,21 +27,25 @@ struct CliCommand {
 }
 
 fn handle_command(cmd: CliCommand) -> Result<(), Box<dyn ::std::error::Error>> {
-    host::add_actor(Actor::from_file(cmd.processor_path)?)?;
+    let host = WasccHost::new();
+    host.add_actor(Actor::from_file(cmd.processor_path)?)?;
 
     cmd.provider_paths.iter().for_each(|p| {
-        host::add_native_capability(NativeCapability::from_file(p).unwrap()).unwrap();
+        host.add_native_capability(NativeCapability::from_file(p, None).unwrap())
+            .unwrap();
     });
 
     // Listens for match events, processing `TurnRequested` events
-    host::configure(
+    host.bind_actor(
         "MBCMWXKIR2YSPI3PTIKCF4KJ4XVBUJHVY3UFT4K75SAWS5BZ7VIPMSNZ",
         "wascc:messaging",
+        None,
         generate_config("wasmdome.match_events.*"),
     )?;
-    host::configure(
+    host.bind_actor(
         "MBCMWXKIR2YSPI3PTIKCF4KJ4XVBUJHVY3UFT4K75SAWS5BZ7VIPMSNZ",
         "wascc:keyvalue",
+        None,
         redis_config(),
     )?;
 

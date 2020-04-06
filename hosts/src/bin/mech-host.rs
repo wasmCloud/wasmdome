@@ -7,7 +7,7 @@ use natsclient::*;
 use std::{collections::HashMap, path::PathBuf};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use wascc_host::{host, Actor, NativeCapability};
+use wascc_host::{Actor, NativeCapability, WasccHost};
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(
@@ -27,9 +27,10 @@ struct CliCommand {
 }
 
 fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::error::Error>> {
-
+    let host = WasccHost::new();
     cmd.provider_paths.iter().for_each(|p| {
-        host::add_native_capability(NativeCapability::from_file(p).unwrap()).unwrap();
+        host.add_native_capability(NativeCapability::from_file(p, None).unwrap())
+            .unwrap();
     });
 
     let opts = ClientOptions::builder()
@@ -47,21 +48,26 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
                 serde_json::from_slice(&msg.payload).unwrap();
             info!("Received actor schedule request [{:?}].", schedule_req);
 
-            let (team, avatar, name) = if host::actor_claims(&schedule_req.actor).is_none() {
+            let (team, avatar, name) = if host.claims_for_actor(&schedule_req.actor).is_none() {
                 info!("Starting new actor");
                 let actor = Actor::from_gantry(&schedule_req.actor).unwrap();
 
                 let t = get_team(&actor.tags());
                 let a = get_avatar(&actor.tags());
                 let name = actor.name();
-                host::add_actor(actor).unwrap(); // TODO: kill unwrap
-                // Mech actors subscribe to wasmdome.matches.{match}.turns.{actor}
-                host::configure(&schedule_req.actor, 
-                    "wascc:messaging", gen_config(&schedule_req.actor)).unwrap();
+                host.add_actor(actor).unwrap(); // TODO: kill unwrap
+                                                // Mech actors subscribe to wasmdome.matches.{match}.turns.{actor}
+                host.bind_actor(
+                    &schedule_req.actor,
+                    "wascc:messaging",
+                    None,
+                    gen_config(&schedule_req.actor),
+                )
+                .unwrap();
                 (t, a, name)
             } else {
                 info!("Acknowledging start for existing actor");
-                let claims = host::actor_claims(&schedule_req.actor).unwrap();
+                let claims = host.claims_for_actor(&schedule_req.actor).unwrap();
                 (
                     get_team(&claims.metadata.as_ref().unwrap().tags.as_ref().unwrap()),
                     get_avatar(&claims.metadata.as_ref().unwrap().tags.as_ref().unwrap()),
@@ -90,7 +96,7 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
             .unwrap();
             Ok(())
         },
-    )?;    
+    )?;
 
     std::thread::park();
     Ok(())
@@ -98,7 +104,10 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
 
 fn gen_config(actor: &str) -> HashMap<String, String> {
     let mut hm = HashMap::new();
-    hm.insert("SUBSCRIPTION".to_string(), format!("wasmdome.matches.*.turns.{}", actor));
+    hm.insert(
+        "SUBSCRIPTION".to_string(),
+        format!("wasmdome.matches.*.turns.{}", actor),
+    );
     hm.insert("URL".to_string(), "nats://localhost:4222".to_string());
     hm
 }
