@@ -3,7 +3,7 @@ extern crate log;
 use std::{collections::HashMap, path::PathBuf};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use wascc_host::{host, Actor, NativeCapability};
+use wascc_host::{Actor, NativeCapability, WasccHost};
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(
@@ -27,20 +27,24 @@ struct CliCommand {
 }
 
 fn handle_command(cmd: CliCommand) -> Result<(), Box<dyn ::std::error::Error>> {
-    host::add_actor(Actor::from_file(cmd.coordinator_path)?)?;
+    let host = WasccHost::new();
+    host.add_actor(Actor::from_file(cmd.coordinator_path)?)?;
 
     cmd.provider_paths.iter().for_each(|p| {
-        host::add_native_capability(NativeCapability::from_file(p).unwrap()).unwrap();
+        host.add_native_capability(NativeCapability::from_file(p, None).unwrap())
+            .unwrap();
     });
 
-    host::configure(
+    host.bind_actor(
         "MBM7CUPD6VOXKKKPLY23KXYFYG2AAU2M24X6BOME3VOVKMIOZILAVP5N",
         "wascc:messaging",
+        None,
         generate_config("wasmdome.matches.create, wasmdome.match_events.*"),
     )?;
-    host::configure(
+    host.bind_actor(
         "MBM7CUPD6VOXKKKPLY23KXYFYG2AAU2M24X6BOME3VOVKMIOZILAVP5N",
         "wascc:keyvalue",
+        None,
         redis_config(),
     )?;
 

@@ -10,7 +10,7 @@ use natsclient::*;
 use std::path::PathBuf;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use wascc_host::{host, Actor, NativeCapability};
+use wascc_host::{Actor, NativeCapability, WasccHost};
 
 #[derive(Debug, StructOpt, Clone)]
 #[structopt(
@@ -30,17 +30,21 @@ struct CliCommand {
 }
 
 fn preconfigure_host() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    // Load 
+    let host = WasccHost::new();
+    // Load
     // 1 - real NATS
     // 2 - in-memory K/V
     // 3 - in-memory streams
-    host::add_native_capability(NativeCapability::from_file("./libnats_provider.so")?)?;
-    host::add_native_capability(NativeCapability::from_file("./libkeyvalue.so")?)?;
-    host::add_native_capability(NativeCapability::from_file("./libtest_streams_provider.so")?)?;
+    host.add_native_capability(NativeCapability::from_file("./libnats_provider.so", None)?)?;
+    host.add_native_capability(NativeCapability::from_file("./libkeyvalue.so", None)?)?;
+    host.add_native_capability(NativeCapability::from_file(
+        "./libtest_streams_provider.so",
+        None,
+    )?)?;
 
-    host::add_actor(Actor::from_file("./command_processor.wasm")?)?;
-    host::add_actor(Actor::from_file("./match_coord.wasm")?)?;
-    host::add_actor(Actor::from_file("./historian.wasm")?)?;
+    host.add_actor(Actor::from_file("./command_processor.wasm")?)?;
+    host.add_actor(Actor::from_file("./match_coord.wasm")?)?;
+    host.add_actor(Actor::from_file("./historian.wasm")?)?;
     Ok(())
 }
 

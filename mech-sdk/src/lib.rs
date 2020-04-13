@@ -29,9 +29,11 @@ use wasmdome_domain as domain;
 
 pub use domain::commands::MechCommand;
 use domain::state::MechState;
+pub use domain::GameBoard;
 pub use domain::GridDirection;
-use domain::Point;
-use wascc_actor::CapabilitiesContext;
+pub use domain::Point;
+
+use wascc_actor::prelude::*;
 
 #[macro_export]
 macro_rules! mech_handler {
@@ -40,17 +42,16 @@ macro_rules! mech_handler {
         use protocol::events::MatchEvent;
         use $crate::wascc_actor::prelude::*;
 
-        actor_handlers!{ messaging::OP_DELIVER_MESSAGE => handle_message, core::OP_HEALTH_REQUEST => health }        
+        actor_handlers!{ codec::messaging::OP_DELIVER_MESSAGE => handle_message, codec::core::OP_HEALTH_REQUEST => health }
 
-        fn health(_ctx: &CapabilitiesContext, _req: core::HealthRequest) -> ReceiveResult {
+        fn health(_req: codec::core::HealthRequest) -> ReceiveResult {
             Ok(vec![])
         }
 
         fn handle_message(
-            ctx: &CapabilitiesContext,
-            msg: messaging::DeliverMessage,
+            msg: codec::messaging::BrokerMessage,
         ) -> CallResult {
-            let take_turn: TakeTurn = serde_json::from_slice(&msg.message.body)?;
+            let take_turn: TakeTurn = serde_json::from_slice(&msg.body)?;
             let mech =
                 $crate::WasmdomeMechInstruments::new(take_turn.clone(), take_turn.actor.clone());
             let mut vec = if mech.is_alive() {
@@ -68,7 +69,7 @@ macro_rules! mech_handler {
                 turn: take_turn.turn,
                 commands: vec,
             };
-            ctx.msg().publish(
+            messaging::default().publish(
                 &format!(
                     $crate::protocol::match_events_subject!(),
                     take_turn.match_id
@@ -90,6 +91,7 @@ pub trait MechInstruments {
     fn last_radar_scan(&self) -> Option<Vec<RadarPing>>;
     fn direction_to(&self, target: &Point) -> GridDirection;
     fn random_number(&self, min: u32, max: u32) -> u32;
+    fn world_size(&self) -> GameBoard;
 
     //- Generate commands
 
@@ -109,12 +111,11 @@ pub struct RadarPing {
 pub struct WasmdomeMechInstruments {
     actor: String,
     turn: protocol::commands::TakeTurn,
-    ctx: CapabilitiesContext,
 }
 
 impl WasmdomeMechInstruments {
     pub fn new(turn: protocol::commands::TakeTurn, actor: String) -> Self {
-        WasmdomeMechInstruments { turn, actor, ctx: CapabilitiesContext::default() }
+        WasmdomeMechInstruments { turn, actor }
     }
 }
 
@@ -199,9 +200,16 @@ impl MechInstruments for WasmdomeMechInstruments {
     }
 
     fn random_number(&self, min: u32, max: u32) -> u32 {
-        match self.ctx.extras().get_random(min, max) {
+        match extras::default().get_random(min, max) {
             Ok(r) => r,
-            Err(_) => 0
+            Err(_) => 0,
+        }
+    }
+
+    fn world_size(&self) -> GameBoard {
+        GameBoard {
+            height: self.turn.state.parameters.height,
+            width: self.turn.state.parameters.width,
         }
     }
 }
