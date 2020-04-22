@@ -5,7 +5,7 @@ authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-wascc-host = { version = "0.6.0", features = ["gantry"] }
+wascc-host = { version = "0.6.1", features = ["gantry"] }
 serde_json = "1.0.48"
 nkeys = "0.0.9"
 serde = "1.0.104"

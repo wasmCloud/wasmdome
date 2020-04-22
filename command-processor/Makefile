@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/command_processor.wasm $(DEBUG)/command_processor_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -n "WasmDome Command Processor"
+	wascap sign $(DEBUG)/command_processor.wasm $(DEBUG)/command_processor_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -l -n "WasmDome Command Processor"
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/command_processor.wasm $(RELEASE)/command_processor_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -n "WasmDome Command Processor"
+	wascap sign $(RELEASE)/command_processor.wasm $(RELEASE)/command_processor_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -l -n "WasmDome Command Processor"
 	
 keys: keys-account
 keys: keys-module

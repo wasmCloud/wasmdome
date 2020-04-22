@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/historian.wasm $(DEBUG)/historian_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -e -n "Wasmdome Historian"
+	wascap sign $(DEBUG)/historian.wasm $(DEBUG)/historian_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -e -l -n "Wasmdome Historian"
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/historian.wasm $(RELEASE)/historian_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -e -n "Wasmdome Historian"
+	wascap sign $(RELEASE)/historian.wasm $(RELEASE)/historian_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -e -l -n "Wasmdome Historian"
 	
 keys: keys-account
 keys: keys-module

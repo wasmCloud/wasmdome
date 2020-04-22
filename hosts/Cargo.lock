@@ -2210,9 +2210,9 @@ dependencies = [
 
 [[package]]
 name = "wascc-host"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94ebb22c5d740f82c07b69a3e52f2e470831445413ca170c8d9b64690a3eec26"
+checksum = "65f4f2ba99b3d24114f2d555d36bd43ef94585f70967fa4b80fc8e8f5baea28a"
 dependencies = [
  "crossbeam",
  "crossbeam-channel",
