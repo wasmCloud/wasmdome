@@ -2343,9 +2343,7 @@ checksum = "daf76fe7d25ac79748a37538b7daeed1c7a6867c92d3245c12c6222e4a20d639"
 name = "wasmdome"
 version = "0.0.3"
 dependencies = [
- "crossbeam",
  "crossbeam-channel",
- "crossbeam-utils",
  "env_logger 0.7.1",
  "log",
  "natsclient",

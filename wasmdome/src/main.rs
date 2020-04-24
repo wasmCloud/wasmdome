@@ -2,7 +2,6 @@
 extern crate log;
 
 use wasmdome_domain as common;
-// use common::commands::MechCommand;
 use wasmdome_protocol as protocol;
 
 use natsclient::*;
