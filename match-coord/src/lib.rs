@@ -27,27 +27,27 @@ mod store;
 
 actor_handlers! { codec::messaging::OP_DELIVER_MESSAGE => handle_message, codec::core::OP_HEALTH_REQUEST => health }
 
-fn health(_req: codec::core::HealthRequest) -> ReceiveResult {
-    Ok(vec![])
+fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
+    Ok(())
 }
 
-fn handle_message(msg: codec::messaging::BrokerMessage) -> ReceiveResult {
+fn handle_message(msg: codec::messaging::BrokerMessage) -> HandlerResult<()> {
     let kv = keyvalue::default();
-    let messaging = messaging::default();
+    let messager = messaging::default();
     if msg.subject == SUBJECT_CREATE_MATCH {
-        create_match(&kv, &messaging, msg.body, &msg.reply_to)
+        create_match(&kv, &messager, msg.body, &msg.reply_to)
     } else if msg.subject.starts_with(SUBJECT_MATCH_EVENTS_PREFIX) {
-        handle_match_event(&kv, &messaging, msg.body)
+        handle_match_event(&kv, &messager, msg.body)
     } else {
-        Ok(vec![])
+        Ok(())
     }
 }
 
 fn handle_match_event(
     kv: &KeyValueStoreHostBinding,
-    messaging: &MessageBrokerHostBinding,
+    messager: &MessageBrokerHostBinding,
     msg: Vec<u8>,
-) -> ReceiveResult {
+) -> HandlerResult<()> {
     let evt: MatchEvent = serde_json::from_slice(&msg)?;
     match evt {
         MatchEvent::ActorStarted {
@@ -57,11 +57,11 @@ fn handle_match_event(
             name,
             team,
         } => {
-            spawn_actor(&kv, &messaging, &match_id, &actor, avatar, name, team)?;
+            spawn_actor(&kv, &messager, &match_id, &actor, avatar, name, team)?;
             if is_match_ready(&kv, &match_id)? {
-                start_match(&kv, &messaging, &match_id)?;
+                start_match(&kv, &messager, &match_id)?;
             }
-            Ok(vec![])
+            Ok(())
         }
         MatchEvent::TurnEvent {
             match_id,
@@ -70,24 +70,18 @@ fn handle_match_event(
         } => {
             let state = store::load_state(&kv, &match_id)?;
             if state.completed.is_none() {
-                publish_take_turns(
-                    &kv,
-                    &messaging,
-                    &match_id,
-                    state.parameters.actors,
-                    new_turn,
-                )?;
+                publish_take_turns(&kv, &messager, &match_id, state.parameters.actors, new_turn)?;
             }
-            Ok(vec![])
+            Ok(())
         }
-        _ => Ok(vec![]),
+        _ => Ok(()),
     }
 }
 
 /// Load match state, apply the spawn actor event to it, save state again
 fn spawn_actor(
     kv: &KeyValueStoreHostBinding,
-    messaging: &MessageBrokerHostBinding,
+    messager: &MessageBrokerHostBinding,
     match_id: &str,
     actor: &str,
     avatar: String,
@@ -118,7 +112,7 @@ fn spawn_actor(
             turn: 0,
             turn_event: event.clone(),
         };
-        messaging.publish(&subject, None, &serde_json::to_vec(&turn_event)?)?;
+        messager.publish(&subject, None, &serde_json::to_vec(&turn_event)?)?;
         state = domain::state::Match::apply_event(&state, &event).unwrap();
     }
 
@@ -130,29 +124,29 @@ fn spawn_actor(
 /// Publish MatchStarted event, initiate the "turn loop" for getting commands from actors
 fn start_match(
     kv: &KeyValueStoreHostBinding,
-    messaging: &MessageBrokerHostBinding,
+    messager: &MessageBrokerHostBinding,
     match_id: &str,
-) -> ReceiveResult {
+) -> HandlerResult<()> {
     let started = protocol::events::MatchEvent::MatchStarted {
         match_id: match_id.to_string(),
     };
     let subject = format!(protocol::match_events_subject!(), match_id);
-    messaging.publish(&subject, None, &serde_json::to_vec(&started)?)?;
+    messager.publish(&subject, None, &serde_json::to_vec(&started)?)?;
 
     let state = store::load_state(&kv, match_id)?;
 
-    publish_take_turns(&kv, &messaging, match_id, state.parameters.actors, 0)?;
+    publish_take_turns(&kv, &messager, match_id, state.parameters.actors, 0)?;
 
-    Ok(vec![])
+    Ok(())
 }
 
 fn publish_take_turns(
     kv: &KeyValueStoreHostBinding,
-    messaging: &MessageBrokerHostBinding,
+    messager: &MessageBrokerHostBinding,
     match_id: &str,
     actors: Vec<String>,
     turn: u32,
-) -> ReceiveResult {
+) -> HandlerResult<()> {
     let state = store::load_state(&kv, match_id)?;
     for actor in actors {
         let turn_subject = format!(protocol::turns_subject!(), match_id, actor);
@@ -162,9 +156,9 @@ fn publish_take_turns(
             turn,
             state: state.clone(),
         };
-        messaging.publish(&turn_subject, None, &serde_json::to_vec(&turn)?)?;
+        messager.publish(&turn_subject, None, &serde_json::to_vec(&turn)?)?;
     }
-    Ok(vec![])
+    Ok(())
 }
 
 /// A match is ready to start when all of the required actors have been scheduled
@@ -185,17 +179,14 @@ fn is_match_ready(
 /// 3. Send ScheduleActor command for each actor in the match
 fn create_match(
     kv: &KeyValueStoreHostBinding,
-    messaging: &MessageBrokerHostBinding,
+    messager: &MessageBrokerHostBinding,
     msg: Vec<u8>,
     reply_to: &str,
-) -> ReceiveResult {
+) -> HandlerResult<()> {
     use domain::state::MatchState;
     use domain::MatchParameters;
     let createmsg: CreateMatch = serde_json::from_slice(&msg)?;
 
-    let ack = StartMatchAck {
-        match_id: createmsg.match_id.clone(),
-    };
     let params = MatchParameters::new(
         createmsg.match_id.clone(),
         createmsg.board_width,
@@ -206,8 +197,14 @@ fn create_match(
     let state = MatchState::new_with_parameters(params);
     store::set_state(&kv, &createmsg.match_id, state)?;
 
-    messaging.publish(reply_to, None, &serde_json::to_vec(&ack)?)?;
-    messaging.publish(
+    if !reply_to.is_empty() {
+        let ack = StartMatchAck {
+            match_id: createmsg.match_id.clone(),
+        };
+        messager.publish(reply_to, None, &serde_json::to_vec(&ack)?)?;
+    }
+
+    messager.publish(
         &format!(protocol::match_events_subject!(), createmsg.match_id),
         None,
         &serde_json::to_vec(&MatchEvent::MatchCreated {
@@ -223,7 +220,7 @@ fn create_match(
             actor,
             match_id: createmsg.match_id.clone(),
         };
-        messaging.publish(
+        messager.publish(
             &format!(
                 "{}.{}.{}",
                 SUBJECT_MATCH_COMMANDS_PREFIX, createmsg.match_id, SUBJECT_SCHEDULE_ACTOR
@@ -232,5 +229,5 @@ fn create_match(
             &serde_json::to_vec(&sched)?,
         )?;
     }
-    Ok(vec![])
+    Ok(())
 }

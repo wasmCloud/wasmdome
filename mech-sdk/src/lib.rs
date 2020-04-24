@@ -44,13 +44,13 @@ macro_rules! mech_handler {
 
         actor_handlers!{ codec::messaging::OP_DELIVER_MESSAGE => handle_message, codec::core::OP_HEALTH_REQUEST => health }
 
-        fn health(_req: codec::core::HealthRequest) -> ReceiveResult {
-            Ok(vec![])
+        fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
+            Ok(())
         }
 
         fn handle_message(
             msg: codec::messaging::BrokerMessage,
-        ) -> CallResult {
+        ) -> HandlerResult<()> {
             let take_turn: TakeTurn = serde_json::from_slice(&msg.body)?;
             let mech =
                 $crate::WasmdomeMechInstruments::new(take_turn.clone(), take_turn.actor.clone());
@@ -77,7 +77,7 @@ macro_rules! mech_handler {
                 None,
                 &serde_json::to_vec(&request)?,
             )?;
-            Ok(vec![])
+            Ok(())
         }
     };
 }

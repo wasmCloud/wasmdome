@@ -10,3 +10,6 @@ account.nk
 module.nk
 .vscode
 target
+
+# Ignoring built .wasm files
+*.wasm
