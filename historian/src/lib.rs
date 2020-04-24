@@ -21,7 +21,6 @@ fn handle_message(msg: codec::messaging::BrokerMessage) -> HandlerResult<()> {
     // BEWARE.
     let logger = logger::default();
     let events = events::default();
-    logger.info("Received message in historian");
     if msg.subject == SUBJECT_TRIGGER_REPLAY {
         trigger_replay(logger, events, msg.body)
     } else if msg.subject.starts_with(SUBJECT_MATCH_EVENTS_PREFIX) {
