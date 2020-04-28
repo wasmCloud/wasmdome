@@ -130,10 +130,7 @@ fn get_avatar(tags: &Vec<String>) -> String {
 fn main() -> std::result::Result<(), Box<dyn ::std::error::Error>> {
     let args = Cli::from_args();
     let cmd = args.command;
-    match env_logger::try_init() {
-        Ok(_) => {}
-        Err(_) => {}
-    };
+    let _ = env_logger::builder().format_module_path(false).try_init();
     match handle_command(cmd) {
         Ok(_) => {}
         Err(e) => {

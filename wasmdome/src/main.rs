@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate log;
 
+mod embeds;
+
 use wasmdome_domain as common;
 use wasmdome_protocol as protocol;
 
@@ -47,65 +49,66 @@ fn preconfigure_host() -> std::result::Result<WasccHost, Box<dyn std::error::Err
     // 1 - Command Processor (messaging + inmemory keyvalue + logging)
     // 2 - Match Coordinator (messaging + inmemory keyvalue + logging + extras)
     // 3 - Historian (messaging + streams + logging)
-    host.add_actor(Actor::from_file("./command_processor_signed.wasm")?)?;
+    let command_processor_actor = Actor::from_bytes(embeds::command_processor_actor())?;
+    let command_processor_public_key = command_processor_actor.public_key();
+    host.add_actor(command_processor_actor)?;
     host.bind_actor(
-        "MA45FJLFLFWCAYQERFKYYOSRT522ZBOZ3RHFS5BNP5SDI4WIM3QAYBIN",
+        &command_processor_public_key,
         "wascc:messaging",
         None,
         generate_nats_config("wasmdome.match_events.*"),
     )?;
     host.bind_actor(
-        "MA45FJLFLFWCAYQERFKYYOSRT522ZBOZ3RHFS5BNP5SDI4WIM3QAYBIN",
+        &command_processor_public_key,
         "wascc:keyvalue",
         None,
         HashMap::new(),
     )?;
     host.bind_actor(
-        "MA45FJLFLFWCAYQERFKYYOSRT522ZBOZ3RHFS5BNP5SDI4WIM3QAYBIN",
+        &command_processor_public_key,
         "wascc:logging",
         None,
         HashMap::new(),
     )?;
 
-    host.add_actor(Actor::from_file("./match_coord_signed.wasm")?)?;
+    let match_coord_actor = Actor::from_bytes(embeds::match_coord_actor())?;
+    let match_coord_public_key = match_coord_actor.public_key();
+    host.add_actor(match_coord_actor)?;
     host.bind_actor(
-        "MAE56QXOS7IRMYLZ6IJV3PRT2UGWJMDORZSL7AQMX3KBDRU5OA3ZMUNL",
+        &match_coord_public_key,
         "wascc:messaging",
         None,
         generate_nats_config("wasmdome.matches.create, wasmdome.match_events.*"),
     )?;
     host.bind_actor(
-        "MAE56QXOS7IRMYLZ6IJV3PRT2UGWJMDORZSL7AQMX3KBDRU5OA3ZMUNL",
+        &match_coord_public_key,
         "wascc:keyvalue",
         None,
         HashMap::new(),
     )?;
     host.bind_actor(
-        "MAE56QXOS7IRMYLZ6IJV3PRT2UGWJMDORZSL7AQMX3KBDRU5OA3ZMUNL",
+        &match_coord_public_key,
         "wascc:logging",
         None,
         HashMap::new(),
     )?;
 
-    host.add_actor(Actor::from_file("./historian_signed.wasm")?)?;
+    let historian_actor = Actor::from_bytes(embeds::historian_actor())?;
+    let historian_public_key = historian_actor.public_key();
+    host.add_actor(historian_actor)?;
     host.bind_actor(
-        "MBO3DAWYCI7UVVTLM2CKB5GX7GYQ3MLYPUXLBQFBODIKZM4M5XXF2FW3",
+        &historian_public_key,
         "wascc:messaging",
         None,
         generate_nats_config("wasmdome.history.replay,wasmdome.match_events.*"),
     )?;
     host.bind_actor(
-        "MBO3DAWYCI7UVVTLM2CKB5GX7GYQ3MLYPUXLBQFBODIKZM4M5XXF2FW3",
+        &historian_public_key,
         "wascc:eventstreams",
         None,
         HashMap::new(),
     )?;
-    host.bind_actor(
-        "MBO3DAWYCI7UVVTLM2CKB5GX7GYQ3MLYPUXLBQFBODIKZM4M5XXF2FW3",
-        "wascc:logging",
-        None,
-        HashMap::new(),
-    )?;
+    host.bind_actor(&historian_public_key, "wascc:logging", None, HashMap::new())?;
 
     Ok(host)
 }
@@ -140,7 +143,6 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
 
     let c = client.clone();
     client.subscribe("wasmdome.matches.*.scheduleactor", move |msg| {
-        info!("About to unwrap");
         let schedule_req: protocol::commands::ScheduleActor =
             serde_json::from_slice(&msg.payload).unwrap();
         info!("Received actor schedule request [{:?}].", schedule_req);
@@ -241,7 +243,6 @@ fn main() -> std::result::Result<(), Box<dyn ::std::error::Error>> {
     let args = Cli::from_args();
     let cmd = args.command;
     let _ = env_logger::builder().format_module_path(false).try_init();
-
     match handle_command(cmd) {
         Ok(_) => {}
         Err(e) => {

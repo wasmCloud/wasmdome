@@ -7,14 +7,12 @@ echo ""
 
 cd ../command-processor
 make release
-cp target/wasm32-unknown-unknown/release/command_processor_signed.wasm ../wasmdome/
 
 cd ../domaincommon
 cargo build
 
 cd ../historian
 make release
-cp target/wasm32-unknown-unknown/release/historian_signed.wasm ../wasmdome/
 
 cd ../hosts
 cargo build
@@ -24,7 +22,6 @@ make build
 
 cd ../match-coord
 make release
-cp target/wasm32-unknown-unknown/release/match_coord_signed.wasm ../wasmdome/
 
 cd ../mech-sdk
 cargo build
