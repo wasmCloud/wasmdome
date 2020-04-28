@@ -26,22 +26,22 @@ use wasmdome_protocol as protocol;
 
 actor_handlers! { codec::messaging::OP_DELIVER_MESSAGE => handle_message, codec::core::OP_HEALTH_REQUEST => health }
 
-fn health(_req: codec::core::HealthRequest) -> ReceiveResult {
-    Ok(vec![])
+fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
+    Ok(())
 }
 
-fn handle_message(msg: codec::messaging::BrokerMessage) -> ReceiveResult {
+fn handle_message(msg: codec::messaging::BrokerMessage) -> HandlerResult<()> {
     if msg
         .subject
         .starts_with(protocol::events::SUBJECT_MATCH_EVENTS_PREFIX)
     {
         handle_event(serde_json::from_slice(&msg.body)?)
     } else {
-        Ok(vec![])
+        Ok(())
     }
 }
 
-fn handle_event(event: MatchEvent) -> ReceiveResult {
+fn handle_event(event: MatchEvent) -> HandlerResult<()> {
     if let MatchEvent::TurnRequested {
         actor,
         match_id,
@@ -50,9 +50,9 @@ fn handle_event(event: MatchEvent) -> ReceiveResult {
     } = event
     {
         take_turn(&actor, &match_id, turn, commands)?;
-        Ok(vec![])
+        Ok(())
     } else {
-        Ok(vec![])
+        Ok(())
     }
 }
 

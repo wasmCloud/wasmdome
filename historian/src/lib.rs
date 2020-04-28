@@ -12,11 +12,11 @@ use std::collections::HashMap;
 
 actor_handlers! { codec::messaging::OP_DELIVER_MESSAGE => handle_message, codec::core::OP_HEALTH_REQUEST => health }
 
-fn health(_req: codec::core::HealthRequest) -> ReceiveResult {
-    Ok(vec![])
+fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
+    Ok(())
 }
 
-fn handle_message(msg: codec::messaging::BrokerMessage) -> ReceiveResult {
+fn handle_message(msg: codec::messaging::BrokerMessage) -> HandlerResult<()> {
     // This if statement is order sensitive since both these subjects have the same prefix.
     // BEWARE.
     let logger = logger::default();
@@ -26,7 +26,7 @@ fn handle_message(msg: codec::messaging::BrokerMessage) -> ReceiveResult {
     } else if msg.subject.starts_with(SUBJECT_MATCH_EVENTS_PREFIX) {
         record_match_event(logger, events, msg.body)
     } else {
-        Ok(vec![])
+        Ok(())
     }
 }
 
@@ -34,7 +34,7 @@ fn record_match_event(
     logger: AutomaticLoggerHostBinding,
     events: EventStreamsHostBinding,
     msg: Vec<u8>,
-) -> ReceiveResult {
+) -> HandlerResult<()> {
     logger.info("Recording match event")?;
     let evt: MatchEvent = serde_json::from_slice(&msg)?;
     let mut hash = HashMap::new();
@@ -45,7 +45,7 @@ fn record_match_event(
         hash,
     )?;
 
-    Ok(vec![])
+    Ok(())
 }
 
 fn extract_match_id(evt: &MatchEvent) -> String {
@@ -62,18 +62,18 @@ fn trigger_replay(
     logger: AutomaticLoggerHostBinding,
     events: EventStreamsHostBinding,
     msg: Vec<u8>,
-) -> ReceiveResult {
+) -> HandlerResult<()> {
     let trigger: serde_json::Value = serde_json::from_slice(&msg)?;
     let match_id = trigger["match_id"].as_str().unwrap().to_string();
     logger.info(&format!("Triggering replay of match {}", match_id))?;
     replay(events, &match_id)
 }
 
-fn replay(events: EventStreamsHostBinding, match_id: &str) -> ReceiveResult {
+fn replay(events: EventStreamsHostBinding, match_id: &str) -> HandlerResult<()> {
     let evts = events.read_all(&format!("wasmdome.history.match.{}", match_id))?;
     let replay_subject = format!("wasmdome.match_events.{}.replay", match_id);
     for event in evts {
         messaging::default().publish(&replay_subject, None, event.values["json"].as_bytes())?;
     }
-    Ok(vec![])
+    Ok(())
 }
