@@ -16,6 +16,10 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
       - name: Install gantry client
         run: cargo install gantry
+      - name: Prep Signing Keys
+        env: # Or as an environment variable
+          WASMDOME_ACCOUNT_KEY: ${{ secrets.WASMDOME_ACCOUNT_KEY }}
+        run: sh keyprep.sh
       - name: Install wascap
         run: cargo install wascap --features "cli"
       - name: Build
