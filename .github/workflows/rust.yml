@@ -12,5 +12,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install wasm32-unknown-unknown target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Install gantry client
+        run: cargo install gantry
       - name: Build
         run: make release
