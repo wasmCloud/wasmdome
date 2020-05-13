@@ -16,5 +16,7 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
       - name: Install gantry client
         run: cargo install gantry
+      - name: Install wascap
+        run: cargo install wascap --features "cli"
       - name: Build
         run: make release
