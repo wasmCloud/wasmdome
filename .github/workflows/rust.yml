@@ -21,7 +21,6 @@ jobs:
           LEADERBOARD_MODULE_KEY: ${{ secrets.LEADERBOARD_MODULE_KEY }}
           MATCHCOORD_MODULE_KEY: ${{ secrets.MATCHCOORD_MODULE_KEY }}
           TURRET1_MODULE_KEY: ${{ secrets.TURRET1_MODULE_KEY }}
-          GANTRY_NATS_CREDS: ${{ secrets.GANTRY_NATS_CREDS }}
         run: sh keyprep.sh
       - name: Start NATS as an NGS Leaf Node
         run: docker run -d -v /etc/nats:./.nats -p 4222:4222 -p 6222:6222 -p 8222:8222 nats -c /etc/nats/nats-leaf.conf
