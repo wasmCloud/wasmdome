@@ -19,4 +19,4 @@ mkdir -p ./NPC/turret/.keys && echo "$WASMDOME_ACCOUNT_KEY" > ./NPC/turret/.keys
 echo "$TURRET1_MODULE_KEY" > ./NPC/turret/.keys/module.nk 
 
 # Leaf Node credentials for NATS
-echo "$GANTRY_NATS_CREDS" > ./.nats/GANTRY.creds
+echo "$GANTRY_NATS_CREDS" > ./nats/GANTRY.creds
