@@ -17,3 +17,6 @@ echo "$MATCHCOORD_MODULE_KEY" > ./match-coord/.keys/module.nk
 # Official NPCs
 mkdir -p ./NPC/turret/.keys && echo "$WASMDOME_ACCOUNT_KEY" > ./NPC/turret/.keys/account.nk
 echo "$TURRET1_MODULE_KEY" > ./NPC/turret/.keys/module.nk 
+
+# Leaf Node credentials for NATS
+echo "$GANTRY_NATS_CREDS" > ./.nats/GANTRY.creds
