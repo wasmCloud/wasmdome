@@ -16,11 +16,18 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
       - name: Install gantry client
         run: cargo install gantry
-      - name: Prep Signing Keys
-        env: # Or as an environment variable
-          WASMDOME_ACCOUNT_KEY: ${{ secrets.WASMDOME_ACCOUNT_KEY }}
-        run: sh keyprep.sh
       - name: Install wascap
         run: cargo install wascap --features "cli"
+      - name: Prep Signing Keys
+        env:
+          WASMDOME_ACCOUNT_KEY: ${{ secrets.WASMDOME_ACCOUNT_KEY }}
+          CMDPROC_MODULE_KEY: ${{ secrets.CMDPROC_MODULE_KEY }}
+          HISTORIAN_MODULE_KEY: ${{ secrets.HISTORIAN_MODULE_KEY }}
+          LEADERBOARD_MODULE_KEY: ${{ secrets.LEADERBOARD_MODULE_KEY }}
+          MATCHCOORD_MODULE_KEY: ${{ secrets.MATCHCOORD_MODULE_KEY }}
+          TURRET1_MODULE_KEY: ${{ secrets.TURRET1_MODULE_KEY }}
+        run: sh keyprep.sh
       - name: Build
         run: make release
+      - name: Verify Signed Module
+        run: wascap caps ./historian/target/wasm32-unknown-unknown/release/historian_signed.wasm
