@@ -1,0 +1,36 @@
+name: Rust
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Prep Signing Keys
+        env:
+          GANTRY_NATS_CREDS: ${{ secrets.GANTRY_NATS_CREDS }}
+          WASMDOME_ACCOUNT_KEY: ${{ secrets.WASMDOME_ACCOUNT_KEY }}
+          CMDPROC_MODULE_KEY: ${{ secrets.CMDPROC_MODULE_KEY }}
+          HISTORIAN_MODULE_KEY: ${{ secrets.HISTORIAN_MODULE_KEY }}
+          LEADERBOARD_MODULE_KEY: ${{ secrets.LEADERBOARD_MODULE_KEY }}
+          MATCHCOORD_MODULE_KEY: ${{ secrets.MATCHCOORD_MODULE_KEY }}
+          TURRET1_MODULE_KEY: ${{ secrets.TURRET1_MODULE_KEY }}
+        run: sh keyprep.sh
+      - name: Start NATS as an NGS Leaf Node
+        run: docker run -d -v `(pwd)`/nats:/etc/nats -p 4222:4222 -p 6222:6222 -p 8222:8222 nats -c /etc/nats/nats-leaf.conf
+      - name: Install wasm32-unknown-unknown target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Install gantry client
+        run: cargo install gantry
+      - name: Install wascap
+        run: cargo install wascap --features "cli"
+      - name: Build
+        run: make release
+      - name: Verify Signed Module
+        run: wascap caps ./historian/target/wasm32-unknown-unknown/release/historian_signed.wasm
