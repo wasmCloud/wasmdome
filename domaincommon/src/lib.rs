@@ -182,6 +182,7 @@ pub struct MatchParameters {
     pub height: u32,
     pub actors: Vec<String>,
     pub max_turns: u32,
+    pub aps_per_turn: u32,
 }
 
 impl MatchParameters {
@@ -190,6 +191,7 @@ impl MatchParameters {
         width: u32,
         height: u32,
         max_turns: u32,
+        aps_per_turn: u32,
         actors: Vec<String>,
     ) -> Self {
         MatchParameters {
@@ -198,6 +200,7 @@ impl MatchParameters {
             height,
             actors,
             max_turns,
+            aps_per_turn,
         }
     }
 }

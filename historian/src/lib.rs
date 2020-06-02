@@ -35,8 +35,8 @@ fn record_match_event(
     events: EventStreamsHostBinding,
     msg: Vec<u8>,
 ) -> HandlerResult<()> {
-    logger.info("Recording match event")?;
     let evt: MatchEvent = serde_json::from_slice(&msg)?;
+    logger.info(&format!("Recording match event: {:?}", evt))?;
     let mut hash = HashMap::new();
     hash.insert("json".to_string(), serde_json::to_string(&evt)?);
 

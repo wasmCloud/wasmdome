@@ -17,8 +17,8 @@ env_logger = "0.7.1"
 quicli = "0.4.0"
 structopt = "0.3.12"
 natsclient = "0.0.7"
-wasmdome-protocol = "0.0.3"
-wasmdome-domain = "0.0.3"
+wasmdome-protocol = { path = "../protocol" }
+wasmdome-domain = { path = "../domaincommon" }
 wascc-nats = { version = "0.6.0", features = ["static_plugin"] }
 wascc-keyvalue =  { path = "../../examples/keyvalue-provider", version = "0.2.1", features = ["static_plugin"] }
 wascc-inmemory-streams =  { path = "../../examples/inmemory-streams", version = "0.2.1", features = ["static_plugin"] }

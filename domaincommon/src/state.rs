@@ -46,13 +46,27 @@ impl MatchState {
 
     fn validate_has_mech(state: &MatchState, mech: &str) -> Result<()> {
         if !state.mechs.contains_key(mech) {
-            return Err(eventsourcing::Error {
+            Err(eventsourcing::Error {
                 kind: eventsourcing::Kind::CommandFailure(
                     "Command received for mech not in match".to_string(),
                 ),
-            });
+            })
+        } else {
+            Ok(())
         }
-        Ok(())
+    }
+
+    fn validate_can_take_action(state: &MatchState, mech: &str, cmd: &MechCommand) -> Result<()> {
+        MatchState::validate_has_mech(state, mech)?;
+        if state.mechs[mech].remaining_aps >= cmd.action_points() {
+            Ok(())
+        } else {
+            Err(eventsourcing::Error {
+                kind: eventsourcing::Kind::CommandFailure(
+                    "Command received for mech would exceed mech's remaining actions".to_string(),
+                ),
+            })
+        }
     }
 
     fn update_radar(state: &MatchState, actor: &str, pings: &[RadarPing]) -> MatchState {
@@ -106,8 +120,11 @@ impl MatchState {
             .cloned()
     }
 
-    pub(crate) fn nearest_unoccupied(state: &MatchState, position: &Option<Point>) -> Option<Point> {
-        if let Some(position) = position {        
+    pub(crate) fn nearest_unoccupied(
+        state: &MatchState,
+        position: &Option<Point>,
+    ) -> Option<Point> {
+        if let Some(position) = position {
             if Self::mech_at(state, position).is_some() {
                 vec![
                     position.relative_point(&state.game_board, &GridDirection::North, 1),
@@ -118,7 +135,9 @@ impl MatchState {
                     position.relative_point(&state.game_board, &GridDirection::SouthWest, 1),
                     position.relative_point(&state.game_board, &GridDirection::West, 1),
                     position.relative_point(&state.game_board, &GridDirection::NorthWest, 1),
-                ].iter().find_map(|p| Self::nearest_unoccupied(state, p))
+                ]
+                .iter()
+                .find_map(|p| Self::nearest_unoccupied(state, p))
             } else {
                 Some(position.clone())
             }
@@ -165,6 +184,46 @@ impl MatchState {
         state.turn_status.taken.insert(mech.to_string());
         state
     }
+
+    fn reduce_mech_actions(state: &MatchState, mech: &str, cmd: &MechCommand) -> MatchState {
+        let mut state = state.clone();
+        let mech_state = state.mechs[mech].clone();
+        println!("{:?}", state.mechs[mech]);
+        state.mechs.insert(
+            mech.to_string(),
+            MechState {
+                remaining_aps: mech_state.remaining_aps - cmd.action_points(),
+                ..mech_state
+            },
+        );
+        println!("{:?}", state.mechs[mech]);
+        let res = MatchState {
+            mechs: state.mechs,
+            ..state
+        };
+        println!("{:?}", res.mechs);
+        res
+    }
+
+    fn reset_mech_actions(state: &MatchState) -> MatchState {
+        let mut state = state.clone();
+        println!("Resetting");
+        state.mechs = state
+            .mechs
+            .clone()
+            .into_iter()
+            .map(|(mech, mech_state)| {
+                (
+                    mech.clone(),
+                    MechState {
+                        remaining_aps: state.parameters.aps_per_turn,
+                        ..mech_state.clone()
+                    },
+                )
+            })
+            .collect::<HashMap<_, _>>();
+        state
+    }
 }
 
 impl AggregateState for MatchState {
@@ -183,6 +242,7 @@ pub struct MechState {
     pub team: String,
     pub avatar: String,
     pub name: String,
+    pub remaining_aps: u32,
 }
 
 impl Default for MechState {
@@ -196,6 +256,7 @@ impl Default for MechState {
             team: "earth".to_string(),
             avatar: "none".to_string(),
             name: "Anonymous".to_string(),
+            remaining_aps: 4,
         }
     }
 }
@@ -259,14 +320,14 @@ impl Aggregate for Match {
         match cmd {
             MechCommand::Move {
                 mech, direction, ..
-            } => Self::handle_move(state, mech, direction),
+            } => Self::handle_move(state, mech, direction, cmd),
             MechCommand::FirePrimary {
                 mech, direction, ..
-            } => Self::handle_fire_primary(state, mech, direction),
+            } => Self::handle_fire_primary(state, mech, direction, cmd),
             MechCommand::FireSecondary {
                 mech, direction, ..
-            } => Self::handle_fire_secondary(state, mech, direction),
-            MechCommand::RequestRadarScan { mech, .. } => Self::handle_radar(state, mech),
+            } => Self::handle_fire_secondary(state, mech, direction, cmd),
+            MechCommand::RequestRadarScan { mech, .. } => Self::handle_radar(state, mech, cmd),
             MechCommand::SpawnMech {
                 mech,
                 position,
@@ -289,16 +350,19 @@ impl Match {
     fn handle_move(
         state: &<Match as Aggregate>::State,
         mech: &str,
-        direction: &GridDirection,
+        dir: &GridDirection,
+        cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
         MatchState::validate_has_mech(state, mech)?;
+        MatchState::validate_can_take_action(state, mech, cmd)?;
+        let state = &MatchState::reduce_mech_actions(state, mech, cmd); //TODO assign match state
         match state.mechs[mech]
             .position
-            .relative_point(&state.game_board, direction, 1)
+            .relative_point(&state.game_board, dir, 1)
         {
             Some(p) => {
                 if let Some(m) = MatchState::mech_at(state, &p) {
-                    Ok(vec![GameEvent::DamageTaken{
+                    Ok(vec![GameEvent::DamageTaken {
                         damage: WALL_DAMAGE,
                         damage_source: DamageSource::MechCollision(m.name.to_string()),
                         damage_target: mech.to_string(),
@@ -308,8 +372,8 @@ impl Match {
                         mech: mech.to_string(),
                         position: p,
                     }])
-                }                
-            },
+                }
+            }
             None => Ok(vec![GameEvent::DamageTaken {
                 damage_target: mech.to_string(),
                 damage: WALL_DAMAGE,
@@ -339,6 +403,7 @@ impl Match {
             });
             if state.turn_status.taken.len() == state.parameters.actors.len() - 1 {
                 // this state won't change until the event is processed, so the count is down by 1
+                MatchState::reset_mech_actions(state);
                 evts.push(GameEvent::MatchTurnCompleted {
                     new_turn: state.turn_status.current + 1,
                 });
@@ -359,9 +424,12 @@ impl Match {
         state: &<Match as Aggregate>::State,
         mech: &str,
         dir: &GridDirection,
+        cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
         let mut evts = Vec::new();
         MatchState::validate_has_mech(state, mech)?;
+        MatchState::validate_can_take_action(state, mech, cmd)?;
+        let state = &MatchState::reduce_mech_actions(state, mech, cmd);
         let targets: Vec<_> = state.mechs[mech]
             .position
             .gather_points(&state.game_board, dir, PRIMARY_RANGE)
@@ -384,8 +452,11 @@ impl Match {
         state: &<Match as Aggregate>::State,
         mech: &str,
         dir: &GridDirection,
+        cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
         MatchState::validate_has_mech(state, mech)?;
+        MatchState::validate_can_take_action(state, mech, cmd)?;
+        let state = &MatchState::reduce_mech_actions(state, mech, cmd);
         let mut events = Vec::new();
         let targets: Vec<_> = state.mechs[mech]
             .position
@@ -481,7 +552,10 @@ impl Match {
     fn handle_radar(
         state: &<Match as Aggregate>::State,
         mech: &str,
+        cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
+        MatchState::validate_can_take_action(state, mech, cmd)?;
+        let state = &MatchState::reduce_mech_actions(state, mech, cmd);
         let pings =
             crate::radar::radar_ping(state, &state.mechs[mech].position, &state.mechs[mech].team);
         Ok(vec![GameEvent::RadarScanCompleted {
@@ -503,6 +577,7 @@ mod test {
             actors: mechs.iter().map(|(a, _p)| a.to_string()).collect(),
             match_id: "test_match".to_string(),
             max_turns: max_turns,
+            aps_per_turn: 4,
             height: 24,
             width: 24,
         });
@@ -885,18 +960,16 @@ mod test {
 
     #[test]
     fn move_into_occupied_spot_causes_collision_dmg() {
-        let state: MatchState  = gen_root_state(vec![
-            ("al", Point::new(10,6)),
-            ("bob", Point::new(11, 6))
-        ], 10);
+        let state: MatchState = gen_root_state(
+            vec![("al", Point::new(10, 6)), ("bob", Point::new(11, 6))],
+            10,
+        );
 
-        let cmds = vec![
-            MechCommand::Move{
-                direction: GridDirection::East,
-                mech: "al".to_string(),
-                turn: 0
-            }
-        ];
+        let cmds = vec![MechCommand::Move {
+            direction: GridDirection::East,
+            mech: "al".to_string(),
+            turn: 0,
+        }];
 
         let state = cmds.iter().fold(state, |state, cmd| {
             Match::handle_command(&state, &cmd)
@@ -905,13 +978,10 @@ mod test {
                 .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
         });
 
-        assert_eq!(
-            state.mechs["al"].health,
-            INITIAL_HEALTH - WALL_DAMAGE
-        );
+        assert_eq!(state.mechs["al"].health, INITIAL_HEALTH - WALL_DAMAGE);
         assert_eq!(
             state.mechs["al"].position,
-            Point::new(10,6) // he did not move to new location
+            Point::new(10, 6) // he did not move to new location
         );
     }
 
@@ -990,8 +1060,14 @@ mod test {
         );
 
         assert_eq!(None, MatchState::nearest_unoccupied(&state, &None));
-        assert_eq!(Some(Point::new(10,8)), MatchState::nearest_unoccupied(&state, &Some(Point::new(10,7))));
-        assert_eq!(Some(Point::new(9, 7)), MatchState::nearest_unoccupied(&state, &Some(Point::new(9, 6))));
+        assert_eq!(
+            Some(Point::new(10, 8)),
+            MatchState::nearest_unoccupied(&state, &Some(Point::new(10, 7)))
+        );
+        assert_eq!(
+            Some(Point::new(9, 7)),
+            MatchState::nearest_unoccupied(&state, &Some(Point::new(9, 6)))
+        );
     }
 
     #[test]
@@ -1006,15 +1082,13 @@ mod test {
             10,
         );
 
-        let cmds = vec![
-            MechCommand::SpawnMech {
-                position: Point::new(10,6),
-                avatar: "".to_string(),
-                mech: "bounce".to_string(),
-                name: "test".to_string(),
-                team: "earth".to_string(),
-            },            
-        ];
+        let cmds = vec![MechCommand::SpawnMech {
+            position: Point::new(10, 6),
+            avatar: "".to_string(),
+            mech: "bounce".to_string(),
+            name: "test".to_string(),
+            team: "earth".to_string(),
+        }];
 
         let state = cmds.iter().fold(state, |state, cmd| {
             Match::handle_command(&state, &cmd)
@@ -1023,8 +1097,48 @@ mod test {
                 .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
         });
 
-        assert_eq!(Point::new(10,8), state.mechs["bounce"].position); // Go north until we can't, then find adjacent
+        assert_eq!(Point::new(10, 8), state.mechs["bounce"].position); // Go north until we can't, then find adjacent
     }
 
+    #[test]
+    fn cannot_exceed_action_points() {
+        let path_to_death = INITIAL_HEALTH / SECONDARY_SPLASH_DAMAGE;
+        let state = gen_root_state(
+            vec![("al", Point::new(10, 6)), ("bob", Point::new(16, 11))], // Bob should be within splash range
+            path_to_death + 2,
+        );
 
+        let mut cmds = Vec::new();
+        let i = 0;
+        cmds.push(MechCommand::FireSecondary {
+            turn: i,
+            direction: GridDirection::NorthEast,
+            mech: "al".to_string(),
+        });
+        cmds.push(MechCommand::FireSecondary {
+            turn: i,
+            direction: GridDirection::NorthEast,
+            mech: "al".to_string(),
+        });
+        cmds.push(MechCommand::FinishTurn {
+            turn: i,
+            mech: "al".to_string(),
+        });
+        cmds.push(MechCommand::FinishTurn {
+            mech: "bob".to_string(),
+            turn: i,
+        });
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        assert_eq!(
+            state.mechs["bob"].health,
+            INITIAL_HEALTH - SECONDARY_SPLASH_DAMAGE
+        );
+    }
 }
