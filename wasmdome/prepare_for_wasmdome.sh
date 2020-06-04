@@ -26,11 +26,7 @@ make release
 cd ../mech-sdk
 cargo build
 
-cd ../NPC
-cd corner-turret
-make release
-
-cd ../turret
+cd ../NPC/turret
 make release
 
 cd ../../wasmdome
