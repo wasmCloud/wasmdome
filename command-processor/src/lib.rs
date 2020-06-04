@@ -83,7 +83,6 @@ fn apply_command(
     match_id: &str,
 ) -> MatchState {
     let state = state.clone();
-    //TODO: Examine here for if the event actually goes through
     Match::handle_command(&state, &cmd)
         .unwrap()
         .iter()
