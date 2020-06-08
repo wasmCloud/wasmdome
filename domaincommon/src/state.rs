@@ -173,7 +173,7 @@ impl MatchState {
     }
 
     fn advance_match_turn(state: &MatchState, turn: u32) -> MatchState {
-        let mut state = state.clone();
+        let mut state = MatchState::reset_mech_action_points(state);
         state.turn_status.taken.clear();
         state.turn_status.current = turn;
         state
@@ -306,7 +306,6 @@ impl Aggregate for Match {
                 }))
             }
             GameEvent::MatchTurnCompleted { new_turn } => {
-                let state = MatchState::reset_mech_action_points(state);
                 Ok(MatchState::advance_match_turn(&state, *new_turn))
             }
             GameEvent::MechTurnCompleted { mech, .. } => {
