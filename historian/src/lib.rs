@@ -1,13 +1,14 @@
 extern crate wascc_actor as actor;
 extern crate wasmdome_protocol as protocol;
+extern crate log;
 
 use protocol::events::*;
 
 const SUBJECT_TRIGGER_REPLAY: &str = "wasmdome.history.replay";
 
 use actor::events::EventStreamsHostBinding;
-use actor::logger::AutomaticLoggerHostBinding;
 use actor::prelude::*;
+use log::info;
 use std::collections::HashMap;
 
 actor_handlers! { codec::messaging::OP_DELIVER_MESSAGE => handle_message, codec::core::OP_HEALTH_REQUEST => health }
@@ -19,24 +20,22 @@ fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
 fn handle_message(msg: codec::messaging::BrokerMessage) -> HandlerResult<()> {
     // This if statement is order sensitive since both these subjects have the same prefix.
     // BEWARE.
-    let logger = logger::default();
     let events = events::default();
     if msg.subject == SUBJECT_TRIGGER_REPLAY {
-        trigger_replay(logger, events, msg.body)
+        trigger_replay(events, msg.body)
     } else if msg.subject.starts_with(SUBJECT_MATCH_EVENTS_PREFIX) {
-        record_match_event(logger, events, msg.body)
+        record_match_event(events, msg.body)
     } else {
         Ok(())
     }
 }
 
 fn record_match_event(
-    logger: AutomaticLoggerHostBinding,
     events: EventStreamsHostBinding,
     msg: Vec<u8>,
 ) -> HandlerResult<()> {
     let evt: MatchEvent = serde_json::from_slice(&msg)?;
-    logger.info(&format!("Recording match event: {:?}", evt))?;
+    info!("Recording match event: {:?}", evt);
     let mut hash = HashMap::new();
     hash.insert("json".to_string(), serde_json::to_string(&evt)?);
 
@@ -59,13 +58,12 @@ fn extract_match_id(evt: &MatchEvent) -> String {
 }
 
 fn trigger_replay(
-    logger: AutomaticLoggerHostBinding,
     events: EventStreamsHostBinding,
     msg: Vec<u8>,
 ) -> HandlerResult<()> {
     let trigger: serde_json::Value = serde_json::from_slice(&msg)?;
     let match_id = trigger["match_id"].as_str().unwrap().to_string();
-    logger.info(&format!("Triggering replay of match {}", match_id))?;
+    info!("Triggering replay of match {}", match_id);
     replay(events, &match_id)
 }
 

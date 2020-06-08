@@ -14,6 +14,7 @@ wasmdome-domain = { path = "../domaincommon" }
 serde = "1.0"
 serde_json = "1.0"
 eventsourcing = "0.1.4"
+log = "0.4.8"
 
 [profile.release]
 # Optimize for small code size

@@ -185,7 +185,7 @@ impl MatchState {
         state
     }
 
-    fn reduce_mech_actions(state: &MatchState, mech: &str, points_consumed: &u32) -> MatchState {
+    fn deduct_mech_action_points(state: &MatchState, mech: &str, points_consumed: &u32) -> MatchState {
         let mut state = state.clone();
         let mech_state = state.mechs[mech].clone();
         state.mechs.insert(
@@ -198,7 +198,7 @@ impl MatchState {
         state
     }
 
-    fn reset_mech_actions(state: &MatchState) -> MatchState {
+    fn reset_mech_action_points(state: &MatchState) -> MatchState {
         let mut state = state.clone();
         state.mechs = state
             .mechs
@@ -280,7 +280,7 @@ impl Aggregate for Match {
                 }))
             }
             GameEvent::ActionPointsConsumed { mech, points_consumed } => {
-                Ok(MatchState::reduce_mech_actions(state, mech, points_consumed))
+                Ok(MatchState::deduct_mech_action_points(state, mech, points_consumed))
             }
             GameEvent::ActionPointsExceeded { .. } => {
                 //TODO: Handle the penalty for exceeding action points appropriately
@@ -306,7 +306,7 @@ impl Aggregate for Match {
                 }))
             }
             GameEvent::MatchTurnCompleted { new_turn } => {
-                let state = MatchState::reset_mech_actions(state);
+                let state = MatchState::reset_mech_action_points(state);
                 Ok(MatchState::advance_match_turn(&state, *new_turn))
             }
             GameEvent::MechTurnCompleted { mech, .. } => {
@@ -317,18 +317,30 @@ impl Aggregate for Match {
     }
 
     fn handle_command(state: &Self::State, cmd: &Self::Command) -> Result<Vec<Self::Event>> {
+        use MechCommand::*;
         match cmd {
-            MechCommand::Move {
+            Move { mech, .. } |
+            FirePrimary { mech, .. } |
+            FireSecondary { mech, .. } |
+            RequestRadarScan { mech, .. }
+            if MatchState::validate_can_take_action(state, mech, cmd).is_err() => {
+                return Ok(vec![GameEvent::ActionPointsExceeded {
+                        mech: mech.to_string(),
+                        cmd: cmd.clone()
+                    }
+                ])
+            },
+            Move {
                 mech, direction, ..
             } => Self::handle_move(state, mech, direction, cmd),
-            MechCommand::FirePrimary {
+            FirePrimary {
                 mech, direction, ..
             } => Self::handle_fire_primary(state, mech, direction, cmd),
-            MechCommand::FireSecondary {
+            FireSecondary {
                 mech, direction, ..
             } => Self::handle_fire_secondary(state, mech, direction, cmd),
-            MechCommand::RequestRadarScan { mech, .. } => Self::handle_radar(state, mech, cmd),
-            MechCommand::SpawnMech {
+            RequestRadarScan { mech, .. } => Self::handle_radar(state, mech, cmd),
+            SpawnMech {
                 mech,
                 position,
                 team,
@@ -341,7 +353,7 @@ impl Aggregate for Match {
                 avatar: avatar.to_string(),
                 name: name.to_string(),
             }]),
-            MechCommand::FinishTurn { mech, turn } => Self::handle_turn_finish(state, mech, *turn),
+            FinishTurn { mech, turn } => Self::handle_turn_finish(state, mech, *turn),
         }
     }
 }
@@ -354,14 +366,6 @@ impl Match {
         cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
         MatchState::validate_has_mech(state, mech)?;
-        if MatchState::validate_can_take_action(state, mech, cmd).is_err() {
-            return Ok(vec![
-                GameEvent::ActionPointsExceeded {
-                    mech: mech.to_string(),
-                    cmd: cmd.clone()
-                }
-            ])
-        };
         Ok(vec![match state.mechs[mech]
             .position
             .relative_point(&state.game_board, dir, 1)
@@ -432,14 +436,6 @@ impl Match {
         cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
         MatchState::validate_has_mech(state, mech)?;
-        if MatchState::validate_can_take_action(state, mech, cmd).is_err() {
-            return Ok(vec![
-                GameEvent::ActionPointsExceeded {
-                    mech: mech.to_string(),
-                    cmd: cmd.clone()
-                }
-            ])
-        };
         let mut evts = Vec::new();
         let targets: Vec<_> = state.mechs[mech]
             .position
@@ -467,14 +463,6 @@ impl Match {
         cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
         MatchState::validate_has_mech(state, mech)?;
-        if MatchState::validate_can_take_action(state, mech, cmd).is_err() {
-            return Ok(vec![
-                GameEvent::ActionPointsExceeded {
-                    mech: mech.to_string(),
-                    cmd: cmd.clone()
-                }
-            ])
-        };
         let mut evts = Vec::new();
         let targets: Vec<_> = state.mechs[mech]
             .position
@@ -573,14 +561,6 @@ impl Match {
         mech: &str,
         cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
-        if MatchState::validate_can_take_action(state, mech, cmd).is_err() {
-            return Ok(vec![
-                GameEvent::ActionPointsExceeded {
-                    mech: mech.to_string(),
-                    cmd: cmd.clone()
-                }
-            ])
-        };
         let pings =
             crate::radar::radar_ping(state, &state.mechs[mech].position, &state.mechs[mech].team);
         Ok(vec![GameEvent::RadarScanCompleted {

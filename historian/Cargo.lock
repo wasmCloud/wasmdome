@@ -57,6 +57,7 @@ name = "historian"
 version = "0.0.2"
 dependencies = [
  "eventsourcing",
+ "log",
  "serde",
  "serde_json",
  "wascc-actor",
