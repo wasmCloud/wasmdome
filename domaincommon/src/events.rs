@@ -1,4 +1,5 @@
 use crate::{DamageSource, Point, RadarPing, DOMAIN_VERSION};
+use crate::commands::MechCommand;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum EndCause {
@@ -33,6 +34,14 @@ pub enum GameEvent {
     RadarScanCompleted {
         actor: String,
         results: Vec<RadarPing>,
+    },
+    ActionPointsConsumed {
+        mech: String,
+        points_consumed: u32,
+    },
+    ActionPointsExceeded {
+        mech: String,
+        cmd: MechCommand,
     },
     MechTurnCompleted {
         mech: String,

@@ -255,8 +255,7 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+version = "0.0.4"
 dependencies = [
  "eventsourcing 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "eventsourcing-derive 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -274,19 +273,18 @@ dependencies = [
  "serde_json 1.0.51 (registry+https://github.com/rust-lang/crates.io-index)",
  "wascc-actor 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wascc-codec 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasmdome-domain 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasmdome-protocol 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasmdome-domain 0.0.4",
+ "wasmdome-protocol 0.0.4",
 ]
 
 [[package]]
 name = "wasmdome-protocol"
-version = "0.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+version = "0.0.4"
 dependencies = [
  "serde 1.0.106 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.106 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.51 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasmdome-domain 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasmdome-domain 0.0.4",
 ]
 
 [[package]]
@@ -341,8 +339,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum wapc-guest 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b5367d300ea3f87b7039211b2f3c3345f32156797c1e7ec09aba1f0970a575e0"
 "checksum wascc-actor 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b07bfd990827c0c72904b2b8be1ccfc496f168a71651d24300f9a5a74de5ebcc"
 "checksum wascc-codec 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e7b7d2d6a8e5de8318d6525399a155e5cb0e8d1ec547b8d780ad3c03da6e6d1f"
-"checksum wasmdome-domain 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0ffe16695d1e73f0c4e43f564e5d461a8af436ed38526c6569465aac63a44d1a"
-"checksum wasmdome-protocol 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e7325410a8e7c55cb8a5d7f856de7bbee669b3819e53cb7256e74274fc112e4e"
 "checksum winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "8093091eeb260906a183e6ae1abdba2ef5ef2257a21801128899c3fc699229c6"
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"

@@ -98,6 +98,7 @@ pub mod commands {
         pub board_height: u32,
         pub board_width: u32,
         pub max_turns: u32,
+        pub aps_per_turn: u32,
     }
 
     /// Response to a request to start a match. Indicates that the

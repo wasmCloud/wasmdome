@@ -194,7 +194,7 @@ checksum = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",

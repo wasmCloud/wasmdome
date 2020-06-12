@@ -192,6 +192,7 @@ fn create_match(
         createmsg.board_width,
         createmsg.board_height,
         createmsg.max_turns,
+        createmsg.aps_per_turn,
         createmsg.actors.clone(),
     );
     let state = MatchState::new_with_parameters(params);
