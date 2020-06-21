@@ -122,6 +122,8 @@ impl WasmdomeEngineProvider {
             .write()
             .unwrap()
             .remove_bound_actor(&config.module)?;
+
+        publish_disconnect_event(self.nc.clone(), &config.module);
         Ok(vec![])
     }
 

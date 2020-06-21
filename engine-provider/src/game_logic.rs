@@ -233,16 +233,20 @@ pub(crate) fn perform_health_check(
         );
         if h.is_err() {
             info!("Health check on {} failed, unbinding.", actor);
-            nc.publish(
-                &protocol::events::events_subject(None),
-                serde_json::to_string(&ArenaEvent::MechDisconnected {
-                    actor: actor.to_string(),
-                    time: Utc::now(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
+            publish_disconnect_event(nc.clone(), actor);
             store.write().unwrap().remove_bound_actor(actor).unwrap();
         }
     }
+}
+
+pub(crate) fn publish_disconnect_event(nc: Arc<nats::Connection>, actor: &str) {
+    nc.publish(
+        &protocol::events::events_subject(None),
+        serde_json::to_string(&ArenaEvent::MechDisconnected {
+            actor: actor.to_string(),
+            time: Utc::now(),
+        })
+        .unwrap(),
+    )
+    .unwrap();
 }
