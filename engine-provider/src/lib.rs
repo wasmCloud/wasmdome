@@ -35,6 +35,8 @@ const LATTICE_HOST_KEY: &str = "LATTICE_HOST"; // env var name
 const DEFAULT_LATTICE_HOST: &str = "127.0.0.1"; // default mode is anonymous via loopback
 const LATTICE_CREDSFILE_KEY: &str = "LATTICE_CREDS_FILE";
 
+const PROVIDER_QUEUE: &str = "wasmdome-provider"; // Queue subscription ID
+
 #[cfg(not(feature = "static_plugin"))]
 capability_provider!(WasmdomeEngineProvider, WasmdomeEngineProvider::new);
 
@@ -164,7 +166,7 @@ impl CapabilityProvider for WasmdomeEngineProvider {
         let (nc, dp, sto) = (self.nc.clone(), self.dispatcher.clone(), self.store.clone());
         let _h = self
             .nc
-            .subscribe(&protocol::events::arena_control_subject())?
+            .queue_subscribe(&protocol::events::arena_control_subject(), PROVIDER_QUEUE)?
             .with_handler(move |msg| {
                 let ac: ArenaControlCommand = serde_json::from_slice(&msg.data).unwrap();
                 handle_control_command(ac, nc.clone(), dp.clone(), sto.clone());
