@@ -7,9 +7,10 @@ test:
 	cd mech-sdk && cargo test
 
 release: test	
-	cd command-processor && make release
+	#cd command-processor && make release
+	cd engine-provider && make release
 	cd historian && make release
 	cd leaderboard && make release
-	cd match-coord && make release
+	#cd match-coord && make release
 #	cd wasmdome && cargo build --verbose --release
 	

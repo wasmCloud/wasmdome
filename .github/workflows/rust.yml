@@ -16,10 +16,10 @@ jobs:
         env:
           GANTRY_NATS_CREDS: ${{ secrets.GANTRY_NATS_CREDS }}
           WASMDOME_ACCOUNT_KEY: ${{ secrets.WASMDOME_ACCOUNT_KEY }}
-          CMDPROC_MODULE_KEY: ${{ secrets.CMDPROC_MODULE_KEY }}
+          #CMDPROC_MODULE_KEY: ${{ secrets.CMDPROC_MODULE_KEY }}
           HISTORIAN_MODULE_KEY: ${{ secrets.HISTORIAN_MODULE_KEY }}
           LEADERBOARD_MODULE_KEY: ${{ secrets.LEADERBOARD_MODULE_KEY }}
-          MATCHCOORD_MODULE_KEY: ${{ secrets.MATCHCOORD_MODULE_KEY }}
+          #MATCHCOORD_MODULE_KEY: ${{ secrets.MATCHCOORD_MODULE_KEY }}
           TURRET1_MODULE_KEY: ${{ secrets.TURRET1_MODULE_KEY }}
         run: sh keyprep.sh
       - name: Start NATS as an NGS Leaf Node
