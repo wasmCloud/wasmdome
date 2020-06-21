@@ -1,47 +1,52 @@
 #[macro_use]
 extern crate serde_derive;
 
+pub const OP_TAKE_TURN: &str = "wdTakeTurn";
+
 pub mod events {
+    use chrono::prelude::*;
+    use domain::events::EndCause;
     use wasmdome_domain as domain;
 
-    // 💩💩💩 This is an annoying hack to get around the restriction that you can't use
-    // 💩💩💩 format! with a string constant, so instead we use a macro to generate
-    // 💩💩💩 a string literal.
-    #[macro_export]
-    macro_rules! match_events_subject {
-        () => {
-            "wasmdome.match_events.{}"
-        };
+    pub fn events_subject(match_id: Option<&str>) -> String {
+        if let Some(match_id) = match_id {
+            format!("wasmdome.match.{}.events", match_id)
+        } else {
+            "wasmdome.arena.events".to_string()
+        }
     }
 
-    pub const SUBJECT_MATCH_EVENTS_PREFIX: &str = "wasmdome.match_events.";
+    pub fn arena_control_subject() -> String {
+        "wasmdome.arena.control".to_string()
+    }
 
     #[derive(Clone, Debug, Serialize, Deserialize)]
-    pub enum MatchEvent {
-        MatchCreated {
+    pub enum ArenaEvent {
+        MechConnected {
+            actor: String,
+            time: DateTime<Utc>,
+        },
+        MechDisconnected {
+            actor: String,
+            time: DateTime<Utc>,
+        },
+        MatchStarted {
             match_id: String,
             actors: Vec<String>,
             board_height: u32,
             board_width: u32,
+            start_time: DateTime<Utc>,
         },
-        ActorStarted {
-            actor: String,
+        MatchCompleted {
             match_id: String,
-            name: String,
-            avatar: String,
-            team: String,
+            cause: EndCause,
+            time: DateTime<Utc>,
         },
-        MatchStarted {
-            match_id: String,
-        },
-        /// Published in response to a TakeTurn command. The command processor will be listening for this event
-        TurnRequested {
-            actor: String,
-            match_id: String,
-            turn: u32,
-            commands: Vec<domain::commands::MechCommand>,
-        },
-        /// Emitted by the command processor so that downstream listeners (e.g. historian, leaderboard) can process
+    }
+
+    #[derive(Clone, Debug, Serialize, Deserialize)]
+    pub enum MatchEvent {
+        /// Emitted by the core engine so that downstream listeners (e.g. historian, leaderboard) can process
         TurnEvent {
             actor: String,
             match_id: String,
@@ -54,16 +59,10 @@ pub mod events {
 pub mod commands {
     use wasmdome_domain as domain;
 
-    #[macro_export]
-    macro_rules! turns_subject {
-        () => {
-            "wasmdome.matches.{}.turns.{}"
-        };
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub enum ArenaControlCommand {
+        StartMatch(CreateMatch),
     }
-
-    pub const SUBJECT_CREATE_MATCH: &str = "wasmdome.matches.create";
-    pub const SUBJECT_MATCH_COMMANDS_PREFIX: &str = "wasmdome.matches";
-    pub const SUBJECT_SCHEDULE_ACTOR: &str = "scheduleactor";
 
     /// Sent on a match subject to tell a given mech to take its turn. The response
     /// to this should be an acknowledgement containing the list of commands performed
@@ -76,18 +75,9 @@ pub mod commands {
         pub state: domain::state::MatchState,
     }
 
-    /// Requests that a given actor be scheduled for a given match (auction style)
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    pub struct ScheduleActor {
-        pub actor: String,
-        pub match_id: String,
-    }
-
-    /// Response to a messaging request to schedule an actor
-    #[derive(Debug, Clone, Serialize, Deserialize)]
-    pub struct ScheduleActorAck {
-        pub actor: String,
-        pub match_id: String,
+    pub struct TakeTurnResponse {
+        pub commands: Vec<domain::commands::MechCommand>,
     }
 
     /// Signals the desire to create a new match
@@ -99,12 +89,5 @@ pub mod commands {
         pub board_width: u32,
         pub max_turns: u32,
         pub aps_per_turn: u32,
-    }
-
-    /// Response to a request to start a match. Indicates that the
-    /// match is starting
-    #[derive(Debug, Clone, Serialize, Deserialize)]
-    pub struct StartMatchAck {
-        pub match_id: String,
     }
 }

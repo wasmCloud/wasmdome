@@ -20,9 +20,9 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "chrono"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31850b4a4d6bae316f7a09e691c944c28299298837edc0a03f755618c23cbc01"
+checksum = "80094f509cf8b5ae86a4966a39b3ff66cd7e2a3e594accec3743ff3fabeab5b2"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -308,7 +308,7 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-mech-sdk"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "serde",
  "serde_derive",
@@ -323,6 +323,7 @@ dependencies = [
 name = "wasmdome-protocol"
 version = "0.0.4"
 dependencies = [
+ "chrono",
  "serde",
  "serde_derive",
  "serde_json",

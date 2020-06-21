@@ -1,0 +1,26 @@
+[package]
+name = "engine-provider"
+version = "0.0.1"
+authors = ["Kevin Hoffman <alothien@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Enable if the provider will be statically compiled into a host
+static_plugin = []
+
+
+[dependencies]
+wascc-codec = "0.7.0"
+log = "0.4.8"
+env_logger = "0.7.1"
+nats = "0.5.0"
+wasmdome-protocol = { path = "../protocol" }
+wasmdome-domain = { path = "../domaincommon" }
+redis = "0.16.0"
+serde = { version = "1.0.113", features = ["derive"]}
+serde_json = "1.0.55"
+chrono = { version = "0.4.11", features = ["serde"] }
+rand = "0.7.3"
