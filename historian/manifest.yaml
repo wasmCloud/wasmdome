@@ -13,6 +13,6 @@ config:
     - actor: "MCRXNIHCTMNAGRMS4BKENM2DTKXKSKCTEK2M2P7MBNLK4AQRIIXR6G66"
       capability: "wascc:messaging"
       values:
-        SUBSCRIPTION: "wasmdome.match_events.*,wasmdome.history.replay"
+        SUBSCRIPTION: "wasmdome.match.*.events,wasmdome.history.replay"
         URL: "nats://localhost:4222"
 
