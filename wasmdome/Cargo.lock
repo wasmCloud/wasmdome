@@ -2388,6 +2388,7 @@ dependencies = [
 name = "wasmdome-protocol"
 version = "0.0.4"
 dependencies = [
+ "chrono",
  "serde",
  "serde_derive",
  "serde_json",
