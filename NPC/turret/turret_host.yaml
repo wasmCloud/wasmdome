@@ -1,0 +1,12 @@
+# Make sure to change the actor ID here to the one you have
+# based on your local keys
+---
+actors:
+    - ./wasm32-unknown-unknown/release/turret_signed.wasm
+bindings:
+    - actor: "MCPBZXJDXCWRJAOPHXCBGVU55BAKCQSNUXUQRKRLI6RWYRFJW7W64JH4"
+        capability: "wasmdome:engine"
+        values:
+capabilities: []
+    
+    

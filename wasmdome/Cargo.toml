@@ -20,6 +20,6 @@ natsclient = "0.0.7"
 wasmdome-protocol = { path = "../protocol" }
 wasmdome-domain = { path = "../domaincommon" }
 wascc-nats = { version = "0.6.0", features = ["static_plugin"] }
-wascc-keyvalue =  { path = "../../examples/keyvalue-provider", version = "0.2.1", features = ["static_plugin"] }
+keyvalue =  { path = "../../examples/keyvalue-provider", version = "0.3.0", features = ["static_plugin"] }
 wascc-inmemory-streams =  { path = "../../examples/inmemory-streams", version = "0.2.1", features = ["static_plugin"] }
 wascc-logging = { version = "0.6.0", features = ["static_plugin"] }

@@ -1,6 +1,6 @@
 [package]
 name = "wasmdome-mech-sdk"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 description = "SDK for developing WebAssembly robots to compete autonomously in arenas"

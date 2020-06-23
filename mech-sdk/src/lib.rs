@@ -38,20 +38,20 @@ use wascc_actor::prelude::*;
 #[macro_export]
 macro_rules! mech_handler {
     ($user_handler:ident) => {
-        use protocol::commands::TakeTurn;
+        use protocol::commands::{TakeTurn, TakeTurnResponse};
         use protocol::events::MatchEvent;
+        use protocol::OP_TAKE_TURN;
         use $crate::wascc_actor::prelude::*;
 
-        actor_handlers!{ codec::messaging::OP_DELIVER_MESSAGE => handle_message, codec::core::OP_HEALTH_REQUEST => health }
+        actor_handlers!{ OP_TAKE_TURN => handle_take_turn, codec::core::OP_HEALTH_REQUEST => health }
 
         fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
             Ok(())
         }
 
-        fn handle_message(
-            msg: codec::messaging::BrokerMessage,
-        ) -> HandlerResult<()> {
-            let take_turn: TakeTurn = serde_json::from_slice(&msg.body)?;
+        fn handle_take_turn(
+            take_turn: protocol::commands::TakeTurn,
+        ) -> HandlerResult<TakeTurnResponse> {
             let mech =
                 $crate::WasmdomeMechInstruments::new(take_turn.clone(), take_turn.actor.clone());
             let mut vec = if mech.is_alive() {
@@ -63,21 +63,10 @@ macro_rules! mech_handler {
                 mech: take_turn.actor.clone(),
                 turn: take_turn.turn,
             });
-            let request = MatchEvent::TurnRequested {
-                actor: take_turn.actor,
-                match_id: take_turn.match_id.clone(),
-                turn: take_turn.turn,
+            let response = TakeTurnResponse {
                 commands: vec,
             };
-            messaging::default().publish(
-                &format!(
-                    $crate::protocol::match_events_subject!(),
-                    take_turn.match_id
-                ),
-                None,
-                &serde_json::to_vec(&request)?,
-            )?;
-            Ok(())
+            Ok(response)
         }
     };
 }

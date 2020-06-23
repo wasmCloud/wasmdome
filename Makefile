@@ -6,10 +6,8 @@ CARGO = cargo --color $(COLOR)
 test:
 	cd mech-sdk && cargo test
 
-release: test	
-	cd command-processor && make release
+release: test		
+	cd engine-provider && cargo build --verbose --release
 	cd historian && make release
-	cd leaderboard && make release
-	cd match-coord && make release
-#	cd wasmdome && cargo build --verbose --release
+	cd leaderboard && make release	
 	
