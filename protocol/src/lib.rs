@@ -12,12 +12,12 @@ pub mod events {
         if let Some(match_id) = match_id {
             format!("wasmdome.match.{}.events", match_id)
         } else {
-            "wasmdome.arena.events".to_string()
+            "wasmdome.public.arena.events".to_string()
         }
     }
 
     pub fn arena_control_subject() -> String {
-        "wasmdome.arena.control".to_string()
+        "wasmdome.internal.arena.control".to_string()
     }
 
     #[derive(Clone, Debug, Serialize, Deserialize)]
