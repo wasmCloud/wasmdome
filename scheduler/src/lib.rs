@@ -53,6 +53,7 @@ fn get_schedule(reply_to: &str) -> HandlerResult<()> {
             serde_json::from_str(&keyvalue::default().get(&match_key(&match_id))?.unwrap())?;
         result.push(sm);
     }
+    result.sort_by(|a, b| a.entry.match_start.cmp(&b.entry.match_start));
     messaging::default().publish(reply_to, None, &serde_json::to_vec(&result)?)?;
     Ok(())
 }
