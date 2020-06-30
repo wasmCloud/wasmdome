@@ -122,13 +122,13 @@ fn gen_creds(sub: &str, iss: &str, name: &str) -> serde_json::Value {
         "nats": {
             "pub": {
                 "allow": [
-                    "wasmbus.>",
+                    "wasmbus.provider.wasmdome.engine.default", // Only allowed to communicate with the engine provider
                     "_INBOX.>",
                 ]
             },
             "sub": {
                 "allow": [
-                    "wasmbus.>",
+                    "wasmbus.actor.*", // The actor target subject on the bus
                     "INBOX.>"
                 ]
             }
