@@ -129,7 +129,7 @@ fn gen_creds(sub: &str, iss: &str, name: &str) -> serde_json::Value {
             "sub": {
                 "allow": [
                     "wasmbus.actor.*", // The actor target subject on the bus
-                    "INBOX.>"
+                    "_INBOX.>"
                 ]
             }
         }
