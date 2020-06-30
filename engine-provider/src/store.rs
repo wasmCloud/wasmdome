@@ -139,3 +139,31 @@ fn match_key(match_id: &str) -> String {
 fn actors_key() -> String {
     "wasmdome:actors".to_string()
 }
+
+#[cfg(test)]
+mod test {
+    use wasmdome_protocol::commands::{ArenaControlCommand, CreateMatch};
+
+    #[test]
+    fn singleton_enum_serialize() {
+        // This test is basically just here so that we can provide a reference for how the
+        // Phoenix/Elixir website needs to send arena control messages
+
+        let query = ArenaControlCommand::QueryMechs;
+        let s = serde_json::to_string(&query).unwrap();
+        assert_eq!("\"QueryMechs\"", s);
+
+        let sm = ArenaControlCommand::StartMatch(CreateMatch {
+            actors: Vec::new(),
+            aps_per_turn: 4,
+            match_id: "test".to_string(),
+            board_height: 10,
+            board_width: 20,
+            max_turns: 100,
+        });
+        let s2 = serde_json::to_string(&sm).unwrap();
+        assert_eq!(
+            "{\"StartMatch\":{\"match_id\":\"test\",\"actors\":[],\"board_height\":10,\"board_width\":20,\"max_turns\":100,\"aps_per_turn\":4}}", 
+            s2);
+    }
+}

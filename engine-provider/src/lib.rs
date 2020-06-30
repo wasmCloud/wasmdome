@@ -166,10 +166,10 @@ impl CapabilityProvider for WasmdomeEngineProvider {
         let (nc, dp, sto) = (self.nc.clone(), self.dispatcher.clone(), self.store.clone());
         let _h = self
             .nc
-            .queue_subscribe(&protocol::events::arena_control_subject(), PROVIDER_QUEUE)?
+            .queue_subscribe(&protocol::commands::arena_control_subject(), PROVIDER_QUEUE)?
             .with_handler(move |msg| {
                 let ac: ArenaControlCommand = serde_json::from_slice(&msg.data).unwrap();
-                handle_control_command(ac, nc.clone(), dp.clone(), sto.clone());
+                handle_control_command(ac, nc.clone(), dp.clone(), sto.clone(), msg.reply);
                 Ok(())
             });
 
@@ -196,6 +196,7 @@ fn handle_control_command(
     nc: Arc<nats::Connection>,
     dispatcher: Arc<RwLock<Box<dyn Dispatcher>>>,
     store: Arc<RwLock<MatchStore>>,
+    reply: Option<String>,
 ) {
     use ArenaControlCommand::*;
     match ac {
@@ -204,6 +205,16 @@ fn handle_control_command(
             Err(e) => {
                 error!("Failed to start match: {}", e);
             }
+        },
+        QueryMechs => match reply {
+            Some(s) => {
+                let mut lock = store.write().unwrap();
+                let resp = MechQueryResponse {
+                    mechs: lock.bound_actors().unwrap().clone(),
+                };
+                nc.publish(&s, &serde_json::to_vec(&resp).unwrap()).unwrap();
+            }
+            None => {}
         },
     };
 }
