@@ -12,12 +12,8 @@ pub mod events {
         if let Some(match_id) = match_id {
             format!("wasmdome.match.{}.events", match_id)
         } else {
-            "wasmdome.arena.events".to_string()
+            "wasmdome.public.arena.events".to_string()
         }
-    }
-
-    pub fn arena_control_subject() -> String {
-        "wasmdome.arena.control".to_string()
     }
 
     #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -59,9 +55,14 @@ pub mod events {
 pub mod commands {
     use wasmdome_domain as domain;
 
+    pub fn arena_control_subject() -> String {
+        "wasmdome.internal.arena.control".to_string()
+    }
+
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum ArenaControlCommand {
         StartMatch(CreateMatch),
+        QueryMechs,
     }
 
     /// Sent on a match subject to tell a given mech to take its turn. The response
@@ -89,5 +90,10 @@ pub mod commands {
         pub board_width: u32,
         pub max_turns: u32,
         pub aps_per_turn: u32,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct MechQueryResponse {
+        pub mechs: Vec<String>,
     }
 }
