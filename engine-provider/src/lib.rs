@@ -23,13 +23,17 @@ use protocol::commands::*;
 use protocol::{events::ArenaEvent, OP_TAKE_TURN};
 
 use domain::state::MatchState;
+use protocol::MechInfo;
 use std::error::Error;
-use std::sync::{Arc, RwLock};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 const SYSTEM_ACTOR: &str = "system";
 const CAPABILITY_ID: &str = "wasmdome:engine";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const REVISION: u32 = 0;
+const REVISION: u32 = 1;
 
 const LATTICE_HOST_KEY: &str = "LATTICE_HOST"; // env var name
 const DEFAULT_LATTICE_HOST: &str = "127.0.0.1"; // default mode is anonymous via loopback
@@ -48,7 +52,7 @@ pub struct WasmdomeEngineProvider {
 
 impl Default for WasmdomeEngineProvider {
     fn default() -> Self {
-        let _ = env_logger::try_init();
+        let _ = env_logger::builder().format_module_path(false).try_init();
 
         WasmdomeEngineProvider {
             dispatcher: Arc::new(RwLock::new(Box::new(NullDispatcher::new()))),
@@ -60,7 +64,6 @@ impl Default for WasmdomeEngineProvider {
 
 fn get_connection() -> nats::Connection {
     let host = get_env(LATTICE_HOST_KEY, DEFAULT_LATTICE_HOST);
-    info!("Lattice Host: {}", host);
     let mut opts = if let Some(creds) = get_credsfile() {
         nats::Options::with_credentials(creds)
     } else {
@@ -97,16 +100,19 @@ impl WasmdomeEngineProvider {
         // This is typically where you would establish a
         // client or connection to a resource on behalf of
         // an actor
-        info!("Binding actor {}", config.module);
+        let mi = mechinfo_from_hashmap(&config.module, config.values);
         self.store
             .write()
             .unwrap()
-            .add_bound_actor(&config.module)?;
+            .add_bound_actor(&config.module, mi.clone())?;
 
         self.nc
             .publish(
                 &protocol::events::events_subject(None),
                 serde_json::to_string(&ArenaEvent::MechConnected {
+                    name: mi.name.to_string(),
+                    avatar: mi.avatar.to_string(),
+                    team: mi.team.to_string(),
                     actor: config.module.to_string(),
                     time: Utc::now(),
                 })
@@ -229,13 +235,20 @@ fn start_match(
     perform_health_check(store.clone(), dispatcher.clone(), nc.clone());
     use domain::MatchParameters;
 
+    let current_mech_ids: Vec<String> = store
+        .write()
+        .unwrap()
+        .bound_actors()?
+        .iter()
+        .map(|a| a.id.to_string())
+        .collect();
     let params = MatchParameters::new(
         createmsg.match_id.clone(),
         createmsg.board_width,
         createmsg.board_height,
         createmsg.max_turns,
         createmsg.aps_per_turn,
-        remove_noshows(&createmsg.actors, &store.write().unwrap().bound_actors()?), // use this instead of the match params list because this one's filtered by healthy
+        remove_noshows(&createmsg.actors, &current_mech_ids), // use this instead of the match params list because this one's filtered by healthy
     );
     let mut state = MatchState::new_with_parameters(params.clone());
     state = spawn_mechs(nc.clone(), state, store.write().unwrap().bound_actors()?);
@@ -263,6 +276,40 @@ fn start_match(
         createmsg.match_id.clone(),
     );
     Ok(vec![])
+}
+
+fn mechinfo_from_hashmap(actor: &str, hm: HashMap<String, String>) -> MechInfo {
+    use wascc_codec::core::{CONFIG_WASCC_CLAIMS_NAME, CONFIG_WASCC_CLAIMS_TAGS};
+    let name: String = hm
+        .get(CONFIG_WASCC_CLAIMS_NAME)
+        .unwrap_or(&"Anonymous Mech".to_string())
+        .to_string();
+    let tags: String = hm
+        .get(CONFIG_WASCC_CLAIMS_TAGS)
+        .unwrap_or(&"".to_string())
+        .to_string();
+    let tvec: Vec<String> = tags.to_string().split(",").map(|t| t.to_string()).collect();
+    MechInfo {
+        id: actor.to_string(),
+        avatar: get_avatar(&tvec),
+        name: name.to_string(),
+        team: get_team(&tvec),
+    }
+}
+
+fn get_team(tags: &Vec<String>) -> String {
+    if tags.contains(&"npc".to_string()) {
+        "boylur".to_string()
+    } else {
+        "earth".to_string()
+    }
+}
+
+fn get_avatar(tags: &Vec<String>) -> String {
+    match tags.iter().find(|t| t.starts_with("avatar-")) {
+        Some(t) => t.replace("avatar-", ""),
+        None => "none".to_string(),
+    }
 }
 
 mod game_logic;

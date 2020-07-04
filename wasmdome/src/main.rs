@@ -104,20 +104,7 @@ NKEYs are sensitive and should be treated as secrets.
     }
 }
 /*
-fn get_team(tags: &Vec<String>) -> String {
-    if tags.contains(&"npc".to_string()) {
-        "boylur".to_string()
-    } else {
-        "earth".to_string()
-    }
-}
 
-fn get_avatar(tags: &Vec<String>) -> String {
-    match tags.iter().find(|t| t.starts_with("avatar-")) {
-        Some(t) => t.replace("avatar-", ""),
-        None => "none".to_string(),
-    }
-}
 */
 
 fn main() -> std::result::Result<(), Box<dyn ::std::error::Error>> {

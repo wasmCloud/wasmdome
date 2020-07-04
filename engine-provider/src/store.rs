@@ -1,14 +1,15 @@
 use domain::state::MatchState;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 const REDIS_URL_KEY: &str = "WASMDOME_ENGINE_REDIS_URL";
 
 extern crate redis;
+use crate::MechInfo;
 use redis::Commands;
 
 pub(crate) struct MatchStore {
     matches: Option<HashMap<String, MatchState>>,
-    bound_actors: HashSet<String>,
+    bound_actors: HashMap<String, MechInfo>,
     client: Option<redis::Client>,
 }
 
@@ -17,7 +18,7 @@ impl Default for MatchStore {
         MatchStore {
             matches: Some(HashMap::new()),
             client: None,
-            bound_actors: HashSet::new(),
+            bound_actors: HashMap::new(),
         }
     }
 }
@@ -37,37 +38,46 @@ impl MatchStore {
         MatchStore {
             matches: None,
             client: Some(redis::Client::open(url).unwrap()),
-            bound_actors: HashSet::new(),
+            bound_actors: HashMap::new(),
         }
     }
 
-    pub fn add_bound_actor(&mut self, actor: &str) -> Result<(), Box<dyn ::std::error::Error>> {
+    pub fn add_bound_actor(
+        &mut self,
+        actor: &str,
+        mechinfo: MechInfo,
+    ) -> Result<(), Box<dyn ::std::error::Error>> {
         if self.client.is_none() {
-            let _ = self.bound_actors.insert(actor.to_string());
+            let _ = self.bound_actors.insert(actor.to_string(), mechinfo);
             Ok(())
         } else {
             let k = actors_key();
+            let _: u32 = self.client.as_mut().unwrap().sadd(k, actor)?;
+            let mi = mechinfo_key(actor);
             self.client
                 .as_mut()
                 .unwrap()
-                .sadd(k, actor)
+                .set(mi, &serde_json::to_string(&mechinfo)?)
                 .map(|_: ()| ())
                 .map_err(|e| e.into())
         }
     }
 
-    pub fn bound_actors(&mut self) -> Result<Vec<String>, Box<dyn ::std::error::Error>> {
+    pub fn bound_actors(&mut self) -> Result<Vec<MechInfo>, Box<dyn ::std::error::Error>> {
         if self.client.is_none() {
-            let ba: Vec<String> = self.bound_actors.clone().into_iter().collect();
+            let ba: Vec<MechInfo> = self.bound_actors.values().cloned().collect();
             Ok(ba)
         } else {
+            let mut mis = Vec::new();
             let k = actors_key();
-            self.client
-                .as_mut()
-                .unwrap()
-                .smembers(k)
-                .map(|ba: Vec<String>| ba.clone())
-                .map_err(|e| e.into())
+            let actors: Vec<String> = self.client.as_mut().unwrap().smembers(k)?;
+            for actor in actors {
+                let mi = mechinfo_key(&actor);
+                let s: String = self.client.as_mut().unwrap().get(mi)?;
+                let mechinfo: MechInfo = serde_json::from_str(&s)?;
+                mis.push(mechinfo);
+            }
+            Ok(mis)
         }
     }
 
@@ -76,6 +86,8 @@ impl MatchStore {
             let _ = self.bound_actors.remove(actor);
             Ok(())
         } else {
+            let mi = mechinfo_key(actor);
+            let _: bool = self.client.as_mut().unwrap().del(&mi)?;
             let k = actors_key();
             self.client
                 .as_mut()
@@ -138,6 +150,10 @@ fn match_key(match_id: &str) -> String {
 
 fn actors_key() -> String {
     "wasmdome:actors".to_string()
+}
+
+fn mechinfo_key(pk: &str) -> String {
+    format!("wasmdome:actor:{}", pk)
 }
 
 #[cfg(test)]
