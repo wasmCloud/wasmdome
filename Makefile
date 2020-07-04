@@ -10,5 +10,5 @@ release: test
 	cd engine-provider && cargo build --verbose --release
 #	cd historian && make release
 #	cd leaderboard && make release	
-	cd NPC/turret1 && make release
+	cd NPC/turret && make release
 	
