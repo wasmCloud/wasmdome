@@ -97,3 +97,25 @@ pub mod commands {
         pub mechs: Vec<String>,
     }
 }
+
+pub mod tools {
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+    struct TokenRequest {
+        account_key: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+    struct CredentialsRequest {
+        account_key: String,
+        token: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+    enum CredentialsResponse {
+        Valid {
+            user_jwt: String,
+            user_secret: String,
+        },
+        Error(String),
+    }
+}
