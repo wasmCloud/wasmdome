@@ -100,18 +100,18 @@ pub mod commands {
 
 pub mod tools {
     #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-    struct TokenRequest {
-        account_key: String,
+    pub struct TokenRequest {
+        pub account_key: String,
     }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-    struct CredentialsRequest {
-        account_key: String,
-        token: String,
+    pub struct CredentialsRequest {
+        pub account_key: String,
+        pub token: String,
     }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-    enum CredentialsResponse {
+    pub enum CredentialsResponse {
         Valid {
             user_jwt: String,
             user_secret: String,
