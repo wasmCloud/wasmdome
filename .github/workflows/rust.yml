@@ -35,7 +35,7 @@ jobs:
       - name: Upload turret 1
         uses: actions/upload-artifact@v1
         with:
-          name: turret1.wasm
+          name: turret1
           path: NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm
 #      - name: Verify Signed Module
 #        run: wascap caps ./historian/target/wasm32-unknown-unknown/release/historian_signed.wasm
