@@ -28,6 +28,9 @@ pub mod events {
     pub enum ArenaEvent {
         MechConnected {
             actor: String,
+            name: String,
+            avatar: String,
+            team: String,
             time: DateTime<Utc>,
         },
         MechDisconnected {

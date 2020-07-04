@@ -178,7 +178,7 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-protocol"
-version = "0.0.6"
+version = "0.0.8"
 dependencies = [
  "chrono 0.4.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
