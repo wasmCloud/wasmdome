@@ -3,9 +3,11 @@ use redis::{Commands, RedisResult};
 use serde::{de::DeserializeOwned, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+extern crate wasmdome_protocol as protocol;
+use protocol::tools::{CredentialsRequest, CredentialsResponse, TokenRequest};
+
 #[macro_use]
 extern crate serde;
-
 #[macro_use]
 extern crate log;
 
@@ -77,10 +79,13 @@ fn ott_key(ott: &str) -> String {
 fn generate_creds(msg: nats::Message, con: &mut redis::Connection, signing_key: String) {
     info!("Exchanging OTT for credentials");
     let req: CredentialsRequest = serde_json::from_slice(&msg.data).unwrap();
-    let v: RedisResult<String> = con.get(ott_key(&req.token));
+    let key = ott_key(&req.token);
+    info!("{}", key);
+    let v: RedisResult<String> = con.get(key);
     let response = match v {
         Ok(ott_account) => {
             if ott_account != req.account_key {
+                error!("Failed to exchange (bad account)");
                 CredentialsResponse::Error(
                     "Attempt to exchange token for invalid account".to_string(),
                 )
@@ -93,7 +98,10 @@ fn generate_creds(msg: nats::Message, con: &mut redis::Connection, signing_key: 
                 }
             }
         }
-        Err(_) => CredentialsResponse::Error("No such token".to_string()),
+        Err(e) => {
+            error!("Failed to read token: {}", e);
+            CredentialsResponse::Error("No such token".to_string())
+        }
     };
     msg.respond(&serde_json::to_vec(&response).unwrap())
         .unwrap();
@@ -123,14 +131,16 @@ fn gen_creds(sub: &str, iss: &str, name: &str) -> serde_json::Value {
             "pub": {
                 "allow": [
                     "wasmbus.provider.wasmdome.engine.default", // Only allowed to communicate with the engine provider
-                    "_INBOX.>",
                 ]
             },
             "sub": {
                 "allow": [
                     "wasmbus.actor.*", // The actor target subject on the bus
-                    "_INBOX.>"
                 ]
+            },
+            "resp": {
+                "max": 1,
+                "ttl": 0
             }
         }
     })
@@ -166,24 +176,4 @@ fn to_jwt_segment<T: Serialize>(input: &T) -> Result<String> {
         encoded.as_bytes(),
         base64::URL_SAFE_NO_PAD,
     ))
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-struct TokenRequest {
-    account_key: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-struct CredentialsRequest {
-    account_key: String,
-    token: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-enum CredentialsResponse {
-    Valid {
-        user_jwt: String,
-        user_secret: String,
-    },
-    Error(String),
 }

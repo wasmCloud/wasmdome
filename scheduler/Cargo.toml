@@ -9,10 +9,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wascc-actor = "0.7.2"
-wasmdome-protocol = { path = "../protocol" }
+wasmdome-protocol = "0.0.6"
 chrono = { version = "0.4.11", features = ["serde"] }
 serde = { version = "1.0.114", features = ["derive"]}
-serde_json = "1.0.55"
+serde_json = "1.0.56"
+log = "0.4.8"
 
 [profile.release]
 # Optimize for small code size

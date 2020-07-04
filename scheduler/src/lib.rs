@@ -15,6 +15,9 @@
 #[macro_use]
 extern crate serde;
 
+#[macro_use]
+extern crate log;
+
 extern crate wascc_actor as actor;
 
 const SUBJECT_REQUEST_SCHEDULE: &str = "wasmdome.public.arena.schedule";
@@ -33,12 +36,23 @@ actor_handlers! {
 }
 
 fn handle_message(msg: codec::messaging::BrokerMessage) -> HandlerResult<()> {
-    match msg.subject.as_str() {
+    info!(
+        "Received broker message on '{}' ['{}']",
+        msg.subject, SUBJECT_ADD_MATCH
+    );
+    let res = match msg.subject.as_str() {
         SUBJECT_REQUEST_SCHEDULE => get_schedule(&msg.reply_to),
-        SUBJECT_ADD_MATCH => add_match(&msg.reply_to, serde_json::from_slice(&msg.body)?),
+        SUBJECT_ADD_MATCH => {
+            info!("GOT HERE");
+            add_match(&msg.reply_to, serde_json::from_slice(&msg.body)?)
+        }
         SUBJECT_DEL_MATCH => del_match(&msg.reply_to, serde_json::from_slice(&msg.body)?),
         _ => Err("Unexpected subject".into()),
+    };
+    if let Err(e) = res {
+        error!("Failed to handle message: {}", e);
     }
+    Ok(())
 }
 
 fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
@@ -46,6 +60,7 @@ fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
 }
 
 fn get_schedule(reply_to: &str) -> HandlerResult<()> {
+    info!("Requesting schedule");
     let mut result = Vec::new();
     let matches = keyvalue::default().set_members(&match_set_key())?;
     for match_id in matches {
@@ -59,6 +74,7 @@ fn get_schedule(reply_to: &str) -> HandlerResult<()> {
 }
 
 fn add_match(reply_to: &str, match_schedule: MatchScheduleEntry) -> HandlerResult<()> {
+    info!("Scheduling new match");
     let sm = StoredMatch {
         match_id: extras::default().get_guid()?,
         entry: match_schedule.clone(),
