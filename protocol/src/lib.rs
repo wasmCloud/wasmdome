@@ -3,6 +3,14 @@ extern crate serde_derive;
 
 pub const OP_TAKE_TURN: &str = "wdTakeTurn";
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MechInfo {
+    pub name: String,
+    pub avatar: String,
+    pub team: String,
+    pub id: String,
+}
+
 pub mod events {
     use chrono::prelude::*;
     use domain::events::EndCause;
@@ -53,6 +61,7 @@ pub mod events {
 }
 
 pub mod commands {
+    use crate::MechInfo;
     use wasmdome_domain as domain;
 
     pub fn arena_control_subject() -> String {
@@ -94,7 +103,7 @@ pub mod commands {
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct MechQueryResponse {
-        pub mechs: Vec<String>,
+        pub mechs: Vec<MechInfo>,
     }
 }
 
