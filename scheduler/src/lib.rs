@@ -42,10 +42,7 @@ fn handle_message(msg: codec::messaging::BrokerMessage) -> HandlerResult<()> {
     );
     let res = match msg.subject.as_str() {
         SUBJECT_REQUEST_SCHEDULE => get_schedule(&msg.reply_to),
-        SUBJECT_ADD_MATCH => {
-            info!("GOT HERE");
-            add_match(&msg.reply_to, serde_json::from_slice(&msg.body)?)
-        }
+        SUBJECT_ADD_MATCH => add_match(&msg.reply_to, serde_json::from_slice(&msg.body)?),
         SUBJECT_DEL_MATCH => del_match(&msg.reply_to, serde_json::from_slice(&msg.body)?),
         _ => Err("Unexpected subject".into()),
     };

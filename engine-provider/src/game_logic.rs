@@ -13,7 +13,10 @@ use protocol::{
     events::{ArenaEvent, MatchEvent},
     OP_TAKE_TURN,
 };
-use std::sync::{Arc, RwLock};
+use std::{
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 use wascc_codec::{capabilities::Dispatcher, deserialize, serialize};
 
 pub(crate) fn spawn_mechs(
@@ -66,6 +69,7 @@ pub(crate) fn manage_match(
     store: Arc<RwLock<MatchStore>>,
     actors: Vec<String>,
     match_id: String,
+    turn_delay_millis: u64,
 ) {
     info!("Starting thread to manage match {}", match_id);
     std::thread::spawn(move || {
@@ -107,6 +111,7 @@ pub(crate) fn manage_match(
                 publish_match_complete(nc.clone(), &state);
                 info!("Match {} completed", match_id);
             }
+            std::thread::sleep(Duration::from_millis(turn_delay_millis)); // take per-turn pause
         }
     });
 }
