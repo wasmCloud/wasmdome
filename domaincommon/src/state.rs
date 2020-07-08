@@ -1,7 +1,8 @@
 use crate::{
     commands::MechCommand,
     events::{EndCause, GameEvent},
-    DamageSource, GameBoard, GridDirection, MatchParameters, Point, RadarPing, TurnStatus,
+    DamageSource, GameBoard, GridDirection, MatchParameters, Point, RadarPing, RegisterOperation,
+    RegisterValue, TurnStatus, EAX, EBX, ECX,
 };
 use eventsourcing::Result;
 use eventsourcing::{Aggregate, AggregateState};
@@ -185,7 +186,11 @@ impl MatchState {
         state
     }
 
-    fn deduct_mech_action_points(state: &MatchState, mech: &str, points_consumed: &u32) -> MatchState {
+    fn deduct_mech_action_points(
+        state: &MatchState,
+        mech: &str,
+        points_consumed: &u32,
+    ) -> MatchState {
         let mut state = state.clone();
         let mech_state = state.mechs[mech].clone();
         state.mechs.insert(
@@ -216,6 +221,26 @@ impl MatchState {
             .collect::<HashMap<_, _>>();
         state
     }
+
+    fn update_register(
+        state: &MatchState,
+        mech: &str,
+        reg: &u32,
+        val: &RegisterValue,
+    ) -> MatchState {
+        let mut state = state.clone();
+        let mech_state = state.mechs[mech].clone();
+        let mut registers = mech_state.registers;
+        registers.insert(*reg, val.clone());
+        state.mechs.insert(
+            mech.to_string(),
+            MechState {
+                registers,
+                ..mech_state
+            },
+        );
+        state
+    }
 }
 
 impl AggregateState for MatchState {
@@ -235,20 +260,50 @@ pub struct MechState {
     pub avatar: String,
     pub name: String,
     pub remaining_aps: u32,
+    pub registers: HashMap<u32, RegisterValue>,
 }
 
 impl Default for MechState {
-    fn default() -> MechState {
+    fn default() -> Self {
+        MechState::new(
+            INITIAL_HEALTH,
+            Point::new(0, 0),
+            true,
+            false,
+            "None".to_string(),
+            "earth".to_string(),
+            "none".to_string(),
+            "Anonymous".to_string(),
+            4,
+            HashMap::new(),
+        )
+    }
+}
+
+impl MechState {
+    fn new(
+        health: u32,
+        position: Point,
+        alive: bool,
+        victor: bool,
+        id: String,
+        team: String,
+        avatar: String,
+        name: String,
+        remaining_aps: u32,
+        registers: HashMap<u32, RegisterValue>,
+    ) -> Self {
         MechState {
-            health: INITIAL_HEALTH,
-            position: Point::new(0, 0),
-            alive: true,
-            victor: false,
-            id: "None".to_string(),
-            team: "earth".to_string(),
-            avatar: "none".to_string(),
-            name: "Anonymous".to_string(),
-            remaining_aps: 4,
+            health,
+            position,
+            alive,
+            victor,
+            id,
+            team,
+            avatar,
+            name,
+            remaining_aps,
+            registers,
         }
     }
 }
@@ -279,9 +334,14 @@ impl Aggregate for Match {
                     ..m
                 }))
             }
-            GameEvent::ActionPointsConsumed { mech, points_consumed } => {
-                Ok(MatchState::deduct_mech_action_points(state, mech, points_consumed))
-            }
+            GameEvent::ActionPointsConsumed {
+                mech,
+                points_consumed,
+            } => Ok(MatchState::deduct_mech_action_points(
+                state,
+                mech,
+                points_consumed,
+            )),
             GameEvent::ActionPointsExceeded { .. } => {
                 //TODO: Handle the penalty for exceeding action points appropriately
                 Ok(state.clone())
@@ -312,23 +372,26 @@ impl Aggregate for Match {
                 Ok(MatchState::advance_mech_turn(state, mech))
             }
             GameEvent::GameFinished { cause } => Ok(MatchState::finish_game(state, cause)),
+            GameEvent::RegisterUpdate { mech, reg, val } => {
+                Ok(MatchState::update_register(state, mech, reg, val))
+            }
         }
     }
 
     fn handle_command(state: &Self::State, cmd: &Self::Command) -> Result<Vec<Self::Event>> {
         use MechCommand::*;
         match cmd {
-            Move { mech, .. } |
-            FirePrimary { mech, .. } |
-            FireSecondary { mech, .. } |
-            RequestRadarScan { mech, .. }
-            if MatchState::validate_can_take_action(state, mech, cmd).is_err() => {
+            Move { mech, .. }
+            | FirePrimary { mech, .. }
+            | FireSecondary { mech, .. }
+            | RequestRadarScan { mech, .. }
+                if MatchState::validate_can_take_action(state, mech, cmd).is_err() =>
+            {
                 return Ok(vec![GameEvent::ActionPointsExceeded {
-                        mech: mech.to_string(),
-                        cmd: cmd.clone()
-                    }
-                ])
-            },
+                    mech: mech.to_string(),
+                    cmd: cmd.clone(),
+                }])
+            }
             Move {
                 mech, direction, ..
             } => Self::handle_move(state, mech, direction, cmd),
@@ -353,6 +416,7 @@ impl Aggregate for Match {
                 name: name.to_string(),
             }]),
             FinishTurn { mech, turn } => Self::handle_turn_finish(state, mech, *turn),
+            RegisterUpdate { .. } => Self::handle_register_update(state, cmd),
         }
     }
 }
@@ -365,30 +429,36 @@ impl Match {
         cmd: &MechCommand,
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
         MatchState::validate_has_mech(state, mech)?;
-        Ok(vec![match state.mechs[mech]
-            .position
-            .relative_point(&state.game_board, dir, 1)
-        {
-            Some(p) => {
-                if let Some(m) = MatchState::mech_at(state, &p) {
-                    GameEvent::DamageTaken {
-                        damage: WALL_DAMAGE,
-                        damage_source: DamageSource::MechCollision(m.name.to_string()),
-                        damage_target: mech.to_string(),
-                    }
-                } else {
-                    GameEvent::PositionUpdated {
-                        mech: mech.to_string(),
-                        position: p,
+        Ok(vec![
+            match state.mechs[mech]
+                .position
+                .relative_point(&state.game_board, dir, 1)
+            {
+                Some(p) => {
+                    if let Some(m) = MatchState::mech_at(state, &p) {
+                        GameEvent::DamageTaken {
+                            damage: WALL_DAMAGE,
+                            damage_source: DamageSource::MechCollision(m.name.to_string()),
+                            damage_target: mech.to_string(),
+                        }
+                    } else {
+                        GameEvent::PositionUpdated {
+                            mech: mech.to_string(),
+                            position: p,
+                        }
                     }
                 }
-            }
-            None => GameEvent::DamageTaken {
-                damage_target: mech.to_string(),
-                damage: WALL_DAMAGE,
-                damage_source: DamageSource::Wall,
+                None => GameEvent::DamageTaken {
+                    damage_target: mech.to_string(),
+                    damage: WALL_DAMAGE,
+                    damage_source: DamageSource::Wall,
+                },
             },
-        }, GameEvent::ActionPointsConsumed{mech: mech.to_string(), points_consumed: cmd.action_points()}])
+            GameEvent::ActionPointsConsumed {
+                mech: mech.to_string(),
+                points_consumed: cmd.action_points(),
+            },
+        ])
     }
 
     fn handle_turn_finish(
@@ -451,7 +521,10 @@ impl Match {
                 targets[0].health,
             ));
         }
-        evts.push(GameEvent::ActionPointsConsumed{mech: mech.to_string(), points_consumed: cmd.action_points()});
+        evts.push(GameEvent::ActionPointsConsumed {
+            mech: mech.to_string(),
+            points_consumed: cmd.action_points(),
+        });
         Ok(evts)
     }
 
@@ -510,7 +583,10 @@ impl Match {
             );
         }
 
-        evts.push(GameEvent::ActionPointsConsumed{mech: mech.to_string(), points_consumed: cmd.action_points()});
+        evts.push(GameEvent::ActionPointsConsumed {
+            mech: mech.to_string(),
+            points_consumed: cmd.action_points(),
+        });
         Ok(evts)
     }
 
@@ -562,14 +638,76 @@ impl Match {
     ) -> Result<Vec<<Match as Aggregate>::Event>> {
         let pings =
             crate::radar::radar_ping(state, &state.mechs[mech].position, &state.mechs[mech].team);
-        Ok(vec![GameEvent::RadarScanCompleted {
-            actor: mech.to_string(),
-            results: pings,
-        },
-        GameEvent::ActionPointsConsumed {
-            mech: mech.to_string(),
-            points_consumed: cmd.action_points(),
-        },])
+        Ok(vec![
+            GameEvent::RadarScanCompleted {
+                actor: mech.to_string(),
+                results: pings,
+            },
+            GameEvent::ActionPointsConsumed {
+                mech: mech.to_string(),
+                points_consumed: cmd.action_points(),
+            },
+        ])
+    }
+
+    fn handle_register_update(
+        state: &<Match as Aggregate>::State,
+        cmd: &MechCommand,
+    ) -> Result<Vec<<Match as Aggregate>::Event>> {
+        let event = if let MechCommand::RegisterUpdate { mech, reg, op, .. } = cmd {
+            let curr_val = state.mechs[mech].registers.get(reg);
+            match op {
+                RegisterOperation::Accumulate(acc) if *reg == EAX || *reg == ECX => {
+                    if let Some(RegisterValue::Number(n)) = curr_val {
+                        // Prevent positive overflow
+                        let val = if u64::MAX - n < *acc {
+                            u64::MAX
+                        } else {
+                            n + acc
+                        };
+                        vec![GameEvent::RegisterUpdate {
+                            mech: mech.to_string(),
+                            reg: reg.clone(),
+                            val: RegisterValue::Number(val),
+                        }]
+                    } else {
+                        vec![]
+                    }
+                }
+                RegisterOperation::Decrement(dec) if *reg == EAX || *reg == ECX => {
+                    if let Some(RegisterValue::Number(n)) = curr_val {
+                        // Prevent negative overflow
+                        let val = if n < dec { 0 } else { n - dec };
+                        vec![GameEvent::RegisterUpdate {
+                            mech: mech.to_string(),
+                            reg: reg.clone(),
+                            val: RegisterValue::Number(val),
+                        }]
+                    } else {
+                        vec![]
+                    }
+                }
+                RegisterOperation::Set(v) => match v {
+                    RegisterValue::Number(_n) if *reg == EAX || *reg == ECX => {
+                        vec![GameEvent::RegisterUpdate {
+                            mech: mech.to_string(),
+                            reg: reg.clone(),
+                            val: v.clone(),
+                        }]
+                    }
+                    RegisterValue::Text(_s) if *reg == EBX => vec![GameEvent::RegisterUpdate {
+                        mech: mech.to_string(),
+                        reg: reg.clone(),
+                        val: v.clone(),
+                    }],
+                    _ => vec![],
+                },
+                _ => vec![],
+            }
+        } else {
+            vec![]
+        };
+        Ok(event)
     }
 }
 
@@ -1105,7 +1243,6 @@ mod test {
 
         assert_eq!(Point::new(10, 8), state.mechs["bounce"].position); // Go north until we can't, then find adjacent
     }
-    
     #[test]
     fn action_points_limit() {
         let state = gen_root_state(
@@ -1132,12 +1269,12 @@ mod test {
         cmds.push(MechCommand::Move {
             turn: 0,
             direction: GridDirection::NorthEast,
-            mech: "bob".to_string()
+            mech: "bob".to_string(),
         });
         cmds.push(MechCommand::Move {
             turn: 0,
             direction: GridDirection::NorthEast,
-            mech: "bob".to_string()
+            mech: "bob".to_string(),
         });
         cmds.push(MechCommand::FirePrimary {
             turn: 0,
@@ -1147,7 +1284,7 @@ mod test {
         cmds.push(MechCommand::Move {
             turn: 0,
             direction: GridDirection::SouthWest,
-            mech: "bob".to_string()
+            mech: "bob".to_string(),
         });
         cmds.push(MechCommand::FinishTurn {
             turn: 0,
@@ -1172,22 +1309,10 @@ mod test {
 
         let al_position = Point::new(10, 6);
         let bob_position = Point::new(18, 13);
-        assert_eq!(
-            state.mechs["al"].position.x,
-            al_position.x
-        );
-        assert_eq!(
-            state.mechs["al"].position.y,
-            al_position.y
-        );
-        assert_eq!(
-            state.mechs["bob"].position.x,
-            bob_position.x
-        );
-        assert_eq!(
-            state.mechs["bob"].position.y,
-            bob_position.y
-        );
+        assert_eq!(state.mechs["al"].position.x, al_position.x);
+        assert_eq!(state.mechs["al"].position.y, al_position.y);
+        assert_eq!(state.mechs["bob"].position.x, bob_position.x);
+        assert_eq!(state.mechs["bob"].position.y, bob_position.y);
     }
 
     #[test]
@@ -1223,10 +1348,343 @@ mod test {
 
         assert_eq!(
             state.mechs["bob"].health,
-            INITIAL_HEALTH - ( PRIMARY_DAMAGE * 2 )
+            INITIAL_HEALTH - (PRIMARY_DAMAGE * 2)
         );
-
-
     }
 
+    #[test]
+    fn register_acc_modifies_mech_state() {
+        let mech1 = "johnny";
+        let mech2 = "bob";
+        let state = gen_root_state(
+            vec![(mech1, Point::new(10, 6)), (mech2, Point::new(11, 6))],
+            2,
+        );
+        let mut cmds = Vec::new();
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Set(RegisterValue::Number(100)),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Set(RegisterValue::Number(30)),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Accumulate(25),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Accumulate(10),
+            turn: 0,
+        });
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        if let RegisterValue::Number(mech1eax) = state.mechs[mech1].registers.get(&EAX).unwrap() {
+            assert_eq!(*mech1eax, 65);
+            assert_ne!(*mech1eax, 30);
+            assert_ne!(*mech1eax, 55);
+        } else {
+            panic!("Mech 1 EAX register was not successfully incremented");
+        };
+    }
+
+    // Registers test
+    #[test]
+    fn register_dec_modifies_mech_state() {
+        let mech1 = "johnny";
+        let mech2 = "bob";
+        let state = gen_root_state(
+            vec![(mech1, Point::new(10, 6)), (mech2, Point::new(11, 6))],
+            2,
+        );
+        let mut cmds = Vec::new();
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Set(RegisterValue::Number(30)),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Decrement(25),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Decrement(2),
+            turn: 0,
+        });
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        if let RegisterValue::Number(mech1eax) = state.mechs[mech1].registers.get(&EAX).unwrap() {
+            assert_eq!(*mech1eax, 3);
+            assert_ne!(*mech1eax, 30);
+            assert_ne!(*mech1eax, 25);
+            assert_ne!(*mech1eax, 5);
+        } else {
+            panic!("Mech 1 EAX register was not successfully decremented");
+        };
+    }
+
+    #[test]
+    fn register_dec_negative_overflow() {
+        let mech1 = "johnny";
+        let mech2 = "bob";
+        let state = gen_root_state(
+            vec![(mech1, Point::new(10, 6)), (mech2, Point::new(11, 6))],
+            2,
+        );
+        let mut cmds = Vec::new();
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Set(RegisterValue::Number(30)),
+            turn: 0,
+        });
+
+        for i in 0..10 {
+            cmds.push(MechCommand::RegisterUpdate {
+                mech: mech1.to_string(),
+                reg: EAX,
+                op: RegisterOperation::Decrement((i * 10).into()),
+                turn: i,
+            });
+        }
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        if let RegisterValue::Number(mech1eax) = state.mechs[mech1].registers.get(&EAX).unwrap() {
+            assert_eq!(*mech1eax, 0);
+            assert_ne!(*mech1eax, 30);
+        } else {
+            panic!("Mech 1 EAX register was not successfully decremented");
+        };
+    }
+
+    #[test]
+    fn register_acc_positive_overflow() {
+        let mech1 = "johnny";
+        let mech2 = "bob";
+        let state = gen_root_state(
+            vec![(mech1, Point::new(10, 6)), (mech2, Point::new(11, 6))],
+            2,
+        );
+        let mut cmds = Vec::new();
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Set(RegisterValue::Number(u64::MAX - 100)),
+            turn: 0,
+        });
+
+        for i in 0..10 {
+            cmds.push(MechCommand::RegisterUpdate {
+                mech: mech1.to_string(),
+                reg: EAX,
+                op: RegisterOperation::Accumulate((i * 10).into()),
+                turn: i,
+            });
+        }
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        if let RegisterValue::Number(mech1eax) = state.mechs[mech1].registers.get(&EAX).unwrap() {
+            assert_eq!(*mech1eax, u64::MAX);
+            assert_ne!(*mech1eax, 0);
+        } else {
+            panic!("Mech 1 EAX register was not successfully incremented");
+        };
+    }
+
+    #[test]
+    fn register_multiple_changes_test() {
+        let mech1 = "johnny";
+        let mech2 = "bob";
+        let state = gen_root_state(
+            vec![(mech1, Point::new(10, 6)), (mech2, Point::new(11, 6))],
+            2,
+        );
+        let mut cmds = Vec::new();
+
+        let mut register_val: u64 = 123;
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Set(RegisterValue::Number(register_val)),
+            turn: 0,
+        });
+
+        for i in 0..10 {
+            let modify_num: u64 = (i * 10).into();
+            if i % 2 == 1 {
+                register_val += modify_num;
+                cmds.push(MechCommand::RegisterUpdate {
+                    mech: mech1.to_string(),
+                    reg: EAX,
+                    op: RegisterOperation::Accumulate(modify_num),
+                    turn: i,
+                });
+            } else {
+                register_val -= modify_num;
+                cmds.push(MechCommand::RegisterUpdate {
+                    mech: mech1.to_string(),
+                    reg: EAX,
+                    op: RegisterOperation::Decrement(modify_num),
+                    turn: i,
+                });
+            }
+        }
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        if let RegisterValue::Number(mech1eax) = state.mechs[mech1].registers.get(&EAX).unwrap() {
+            assert_eq!(*mech1eax, register_val);
+        } else {
+            panic!("Mech 1 EAX register was not successfully modified");
+        };
+    }
+
+    #[test]
+    fn register_incorrect_operations_rejected() {
+        let mech1 = "johnny";
+        let mech2 = "bob";
+        let state = gen_root_state(
+            vec![(mech1, Point::new(10, 6)), (mech2, Point::new(11, 6))],
+            2,
+        );
+        let mut cmds = Vec::new();
+
+        let eaxval = 123098;
+        let ecxval = 87948;
+        let ebxval = "boylur_plait".to_string();
+
+        // Valid commands
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Set(RegisterValue::Number(eaxval)),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: ECX,
+            op: RegisterOperation::Set(RegisterValue::Number(ecxval)),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EBX,
+            op: RegisterOperation::Set(RegisterValue::Text(ebxval.clone())),
+            turn: 0,
+        });
+
+        // Invalid Commands
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EAX,
+            op: RegisterOperation::Set(RegisterValue::Text("goodhealth".to_string())),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: ECX,
+            op: RegisterOperation::Set(RegisterValue::Text("jane".to_string())),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EBX,
+            op: RegisterOperation::Set(RegisterValue::Number(42)),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EBX,
+            op: RegisterOperation::Accumulate(42),
+            turn: 0,
+        });
+
+        cmds.push(MechCommand::RegisterUpdate {
+            mech: mech1.to_string(),
+            reg: EBX,
+            op: RegisterOperation::Decrement(123),
+            turn: 0,
+        });
+
+        let state = cmds.iter().fold(state, |state, cmd| {
+            Match::handle_command(&state, &cmd)
+                .unwrap()
+                .iter()
+                .fold(state, |state, evt| Match::apply_event(&state, evt).unwrap())
+        });
+
+        if let RegisterValue::Number(mech1eax) = state.mechs[mech1].registers.get(&EAX).unwrap() {
+            assert_eq!(*mech1eax, eaxval);
+            assert_ne!(*mech1eax, ecxval);
+        } else {
+            panic!("Mech 1 EAX register was modified by an invalid operation");
+        };
+
+        if let RegisterValue::Number(mech1ecx) = state.mechs[mech1].registers.get(&ECX).unwrap() {
+            assert_eq!(*mech1ecx, ecxval);
+            assert_ne!(*mech1ecx, eaxval);
+        } else {
+            panic!("Mech 1 ECX register was modified by an invalid operation");
+        };
+
+        if let RegisterValue::Text(mech1ebx) = state.mechs[mech1].registers.get(&EBX).unwrap() {
+            assert_eq!(*mech1ebx, ebxval);
+        } else {
+            panic!("Mech 1 EBX register was modified by an invalid operation");
+        };
+    }
 }

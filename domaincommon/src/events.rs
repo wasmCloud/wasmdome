@@ -1,5 +1,5 @@
-use crate::{DamageSource, Point, RadarPing, DOMAIN_VERSION};
 use crate::commands::MechCommand;
+use crate::{DamageSource, Point, RadarPing, RegisterValue, DOMAIN_VERSION};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum EndCause {
@@ -52,5 +52,10 @@ pub enum GameEvent {
     },
     GameFinished {
         cause: EndCause,
+    },
+    RegisterUpdate {
+        mech: String,
+        reg: u32,
+        val: RegisterValue,
     },
 }

@@ -1,4 +1,4 @@
-use crate::{GridDirection, Point};
+use crate::{GridDirection, Point, RegisterOperation};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MechCommand {
@@ -35,6 +35,13 @@ pub enum MechCommand {
         mech: String,
         turn: u32,
     },
+    /// Mech Register Commands
+    RegisterUpdate {
+        mech: String,
+        turn: u32,
+        reg: u32,
+        op: RegisterOperation,
+    },
 }
 
 impl MechCommand {
@@ -46,6 +53,7 @@ impl MechCommand {
             MechCommand::RequestRadarScan { .. } => 1,
             MechCommand::SpawnMech { .. } => 0,
             MechCommand::FinishTurn { .. } => 0,
+            MechCommand::RegisterUpdate { .. } => 0,
         }
     }
 }
