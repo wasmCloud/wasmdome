@@ -1,4 +1,4 @@
-# Copyright 2015-2020 Capital One Services, LLC
+# Copyright 2015-2019 Capital One Services, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/turret.wasm $(DEBUG)/turret_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -t npc -t avatar-turret-1 -n "Turret"
+	wascap sign $(DEBUG)/scheduler.wasm $(DEBUG)/scheduler_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -z -l -n "Wasmdome Match Scheduler" -v "0.0.1" -r 1
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/turret.wasm $(RELEASE)/turret_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -t npc -t avatar-turret-1 -n "Turret"
+	wascap sign $(RELEASE)/scheduler.wasm $(RELEASE)/scheduler_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -z -l -n "Wasmdome Match Scheduler" -v "0.0.1" -r 1
 	
 keys: keys-account
 keys: keys-module

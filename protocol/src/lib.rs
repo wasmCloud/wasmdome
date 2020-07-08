@@ -3,6 +3,14 @@ extern crate serde_derive;
 
 pub const OP_TAKE_TURN: &str = "wdTakeTurn";
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MechInfo {
+    pub name: String,
+    pub avatar: String,
+    pub team: String,
+    pub id: String,
+}
+
 pub mod events {
     use chrono::prelude::*;
     use domain::events::EndCause;
@@ -12,18 +20,17 @@ pub mod events {
         if let Some(match_id) = match_id {
             format!("wasmdome.match.{}.events", match_id)
         } else {
-            "wasmdome.arena.events".to_string()
+            "wasmdome.public.arena.events".to_string()
         }
-    }
-
-    pub fn arena_control_subject() -> String {
-        "wasmdome.arena.control".to_string()
     }
 
     #[derive(Clone, Debug, Serialize, Deserialize)]
     pub enum ArenaEvent {
         MechConnected {
             actor: String,
+            name: String,
+            avatar: String,
+            team: String,
             time: DateTime<Utc>,
         },
         MechDisconnected {
@@ -57,11 +64,17 @@ pub mod events {
 }
 
 pub mod commands {
+    use crate::MechInfo;
     use wasmdome_domain as domain;
+
+    pub fn arena_control_subject() -> String {
+        "wasmdome.internal.arena.control".to_string()
+    }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum ArenaControlCommand {
         StartMatch(CreateMatch),
+        QueryMechs,
     }
 
     /// Sent on a match subject to tell a given mech to take its turn. The response
@@ -89,5 +102,32 @@ pub mod commands {
         pub board_width: u32,
         pub max_turns: u32,
         pub aps_per_turn: u32,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct MechQueryResponse {
+        pub mechs: Vec<MechInfo>,
+    }
+}
+
+pub mod tools {
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+    pub struct TokenRequest {
+        pub account_key: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+    pub struct CredentialsRequest {
+        pub account_key: String,
+        pub token: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+    pub enum CredentialsResponse {
+        Valid {
+            user_jwt: String,
+            user_secret: String,
+        },
+        Error(String),
     }
 }

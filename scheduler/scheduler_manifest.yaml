@@ -1,0 +1,23 @@
+---
+actors:
+    - ./target/wasm32-unknown-unknown/release/scheduler_signed.wasm
+bindings:
+    - actor: "MATSVAUDXFQY4WB2HJF56Y3XJCFDE532EJTUIT74RB4TZM3ZBXDBL22T"
+      capability: "wascc:messaging"
+      values:
+        SUBSCRIPTION: "wasmdome.public.arena.schedule,wasmdome.internal.arena.new_match,wasmdome.internal.arena.del_match"
+        URL: "nats://127.0.0.1:4222"
+    - actor: "MATSVAUDXFQY4WB2HJF56Y3XJCFDE532EJTUIT74RB4TZM3ZBXDBL22T"
+      capability: "wascc:keyvalue"
+      values:
+        URL: "redis://0.0.0.0:6379"
+    - actor: "MATSVAUDXFQY4WB2HJF56Y3XJCFDE532EJTUIT74RB4TZM3ZBXDBL22T"
+      capability: "wascc:extras"
+      values:
+    - actor: "MATSVAUDXFQY4WB2HJF56Y3XJCFDE532EJTUIT74RB4TZM3ZBXDBL22T"
+      capability: "wascc:logging"
+      values:
+capabilities:
+    - path: ../../wascc-host/examples/.assets/libwascc_redis.so
+    - path: ../../wascc-host/examples/.assets/libwascc_nats.so
+    - path: ../../wascc-host/examples/.assets/libwascc_logging.so

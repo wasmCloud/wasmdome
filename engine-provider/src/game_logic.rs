@@ -7,32 +7,36 @@ use domain::{
     state::{Match, MatchState},
     Point,
 };
+use protocol::MechInfo;
 use protocol::{
     commands::{TakeTurn, TakeTurnResponse},
     events::{ArenaEvent, MatchEvent},
     OP_TAKE_TURN,
 };
-use std::sync::{Arc, RwLock};
+use std::{
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 use wascc_codec::{capabilities::Dispatcher, deserialize, serialize};
 
 pub(crate) fn spawn_mechs(
     nc: Arc<nats::Connection>,
     state: MatchState,
-    actors: Vec<String>,
+    actors: Vec<MechInfo>,
 ) -> MatchState {
     let mut state = state.clone();
-    for actor in actors {
+    for mech in actors {
         let cmd = MechCommand::SpawnMech {
-            mech: actor.to_string(),
+            mech: mech.id.to_string(),
             position: random_spawnpoint(state.parameters.height, state.parameters.width),
-            team: get_team(&vec![]), // TODO: get tags from actor claims during binding
-            avatar: get_avatar(&vec![]).to_string(), // TODO: get tags from actor claims during binding
-            name: format!("{}'s Mech", actor), // TODO: pull mech name from the signed actor's name
+            team: mech.team.to_string(),
+            avatar: mech.avatar.to_string(),
+            name: mech.name.to_string(),
         };
         for event in Match::handle_command(&state, &cmd).unwrap() {
             nc.publish(
                 &protocol::events::events_subject(Some(&state.parameters.match_id)),
-                &serde_json::to_vec(&turn_event(&event, &actor, &state.parameters.match_id))
+                &serde_json::to_vec(&turn_event(&event, &state.parameters.match_id, &mech.id))
                     .unwrap(),
             )
             .unwrap();
@@ -59,27 +63,13 @@ pub(crate) fn random_spawnpoint(board_height: u32, board_width: u32) -> Point {
     Point::new(x as _, y as _)
 }
 
-fn get_team(tags: &Vec<String>) -> String {
-    if tags.contains(&"npc".to_string()) {
-        "boylur".to_string()
-    } else {
-        "earth".to_string()
-    }
-}
-
-fn get_avatar(tags: &Vec<String>) -> String {
-    match tags.iter().find(|t| t.starts_with("avatar-")) {
-        Some(t) => t.replace("avatar-", ""),
-        None => "none".to_string(),
-    }
-}
-
 pub(crate) fn manage_match(
     nc: Arc<nats::Connection>,
     dispatcher: Arc<RwLock<Box<dyn Dispatcher>>>,
     store: Arc<RwLock<MatchStore>>,
     actors: Vec<String>,
     match_id: String,
+    turn_delay_millis: u64,
 ) {
     info!("Starting thread to manage match {}", match_id);
     std::thread::spawn(move || {
@@ -121,6 +111,7 @@ pub(crate) fn manage_match(
                 publish_match_complete(nc.clone(), &state);
                 info!("Match {} completed", match_id);
             }
+            std::thread::sleep(Duration::from_millis(turn_delay_millis)); // take per-turn pause
         }
     });
 }
@@ -225,16 +216,16 @@ pub(crate) fn perform_health_check(
     nc: Arc<nats::Connection>,
 ) {
     let ba = store.write().unwrap().bound_actors().unwrap();
-    for actor in ba.iter() {
+    for mech in ba.iter() {
         let h = dispatcher.read().unwrap().dispatch(
-            actor,
+            &mech.id,
             codec::core::OP_HEALTH_REQUEST,
             &serialize(&codec::core::HealthRequest { placeholder: true }).unwrap(),
         );
         if h.is_err() {
-            info!("Health check on {} failed, unbinding.", actor);
-            publish_disconnect_event(nc.clone(), actor);
-            store.write().unwrap().remove_bound_actor(actor).unwrap();
+            info!("Health check on {} failed, unbinding.", mech.id);
+            publish_disconnect_event(nc.clone(), &mech.id);
+            store.write().unwrap().remove_bound_actor(&mech.id).unwrap();
         }
     }
 }
