@@ -1,0 +1,10 @@
+# You will need to change the public key of the actor to correspond to
+# your own signing keys
+---
+actors:
+    - ./target/wasm32-unknown-unknown/release/clippy_signed.wasm
+bindings:
+    - actor: "MCSDPUZNKNDHR24BHBNS2PJCDFK6ODPQM6VPYKLI2U7QNPQYK3HSFNPB"
+      capability: "wasmdome:engine"
+      values:
+capabilities: []
