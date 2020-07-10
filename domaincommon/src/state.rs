@@ -229,16 +229,9 @@ impl MatchState {
         val: &RegisterValue,
     ) -> MatchState {
         let mut state = state.clone();
-        let mech_state = state.mechs[mech].clone();
-        let mut registers = mech_state.registers;
-        registers.insert(*reg, val.clone());
-        state.mechs.insert(
-            mech.to_string(),
-            MechState {
-                registers,
-                ..mech_state
-            },
-        );
+        state.mechs.entry(mech.to_string()).and_modify(|m| {
+            m.registers.insert(*reg, val.clone());
+        });
         state
     }
 }
@@ -659,16 +652,10 @@ impl Match {
             match op {
                 RegisterOperation::Accumulate(acc) if *reg == EAX || *reg == ECX => {
                     if let Some(RegisterValue::Number(n)) = curr_val {
-                        // Prevent positive overflow
-                        let val = if u64::MAX - n < *acc {
-                            u64::MAX
-                        } else {
-                            n + acc
-                        };
                         vec![GameEvent::RegisterUpdate {
                             mech: mech.to_string(),
                             reg: reg.clone(),
-                            val: RegisterValue::Number(val),
+                            val: RegisterValue::Number(n.saturating_add(*acc)),
                         }]
                     } else {
                         vec![]
@@ -676,12 +663,10 @@ impl Match {
                 }
                 RegisterOperation::Decrement(dec) if *reg == EAX || *reg == ECX => {
                     if let Some(RegisterValue::Number(n)) = curr_val {
-                        // Prevent negative overflow
-                        let val = if n < dec { 0 } else { n - dec };
                         vec![GameEvent::RegisterUpdate {
                             mech: mech.to_string(),
                             reg: reg.clone(),
-                            val: RegisterValue::Number(val),
+                            val: RegisterValue::Number(n.saturating_sub(*dec)),
                         }]
                     } else {
                         vec![]
