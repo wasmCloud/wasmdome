@@ -1,6 +1,6 @@
 [package]
 name = "wasmdome-protocol"
-version = "0.0.8"
+version = "0.0.9"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 homepage = "https://wasmdome.dev"
@@ -16,5 +16,5 @@ categories = ["wasm", "games"]
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-wasmdome-domain = { path = "../domaincommon" }
-chrono = { version = "0.4.12", features = ["serde"] }
+wasmdome-domain = "0.0.6"
+chrono = { version = "0.4.13", features = ["serde"] }
