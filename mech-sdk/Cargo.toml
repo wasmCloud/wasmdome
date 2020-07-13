@@ -1,6 +1,6 @@
 [package]
 name = "wasmdome-mech-sdk"
-version = "0.0.5"
+version = "0.0.6"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 description = "SDK for developing WebAssembly robots to compete autonomously in arenas"
@@ -17,5 +17,5 @@ wascc-codec = "0.7.2"
 serde_json = "1.0.56"
 serde_derive = "1.0.114"
 serde = "1.0.114"
-wasmdome-protocol = { path = "../protocol" }
-wasmdome-domain = { path= "../domaincommon" }
+wasmdome-protocol = "0.0.9"
+wasmdome-domain = "0.0.6"
