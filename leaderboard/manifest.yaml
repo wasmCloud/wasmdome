@@ -3,10 +3,10 @@
 actors:
     - ./target/wasm32-unknown-unknown/release/leaderboard_signed.wasm
 capabilities:
-    - ../../wascc-host/examples/.assets/libredis_provider.so
-    - ../../wascc-host/examples/.assets/libwascc_httpsrv.so
-    - ../../wascc-host/examples/.assets/libnats_provider.so
-config:
+    - path: ../../wascc-host/examples/.assets/libwascc_redis.so
+    - path: ../../wascc-host/examples/.assets/libwascc_httpsrv.so
+    - path: ../../wascc-host/examples/.assets/libwascc_nats.so
+bindings:
     - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
       capability: "wascc:keyvalue"
       values:
@@ -18,6 +18,6 @@ config:
     - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
       capability: "wascc:messaging"
       values:
-        SUBSCRIPTION: "wasmdome.match_events.*"
-        URL: "nats://localhost:4222"
+        SUBSCRIPTION: "wasmdome.match.*.events"
+        URL: "nats://127.0.0.1:4222"
 
