@@ -20,6 +20,10 @@ pub(crate) const DOMAIN_VERSION: &str = "1.0";
 const DEFAULT_BOARD_HEIGHT: u32 = 100;
 const DEFAULT_BOARD_WIDTH: u32 = 100;
 
+pub const EAX: u32 = 0;
+pub const ECX: u32 = 1;
+pub const EBX: u32 = 2;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Point {
     pub x: i32,
@@ -150,6 +154,19 @@ impl Default for GameBoard {
 pub enum WeaponType {
     Primary = 0,
     Secondary = 1,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum RegisterValue {
+    Number(u64),
+    Text(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum RegisterOperation {
+    Accumulate(u64),
+    Decrement(u64),
+    Set(RegisterValue),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
