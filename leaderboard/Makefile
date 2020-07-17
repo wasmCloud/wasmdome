@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/leaderboard.wasm $(DEBUG)/leaderboard_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -s -g -k -n "Wasmdome Leaderboard"
+	wascap sign $(DEBUG)/leaderboard.wasm $(DEBUG)/leaderboard_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -l -n "Wasmdome Leaderboard"
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/leaderboard.wasm $(RELEASE)/leaderboard_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -s -g -k -n "Wasmdome Leaderboard"
+	wascap sign $(RELEASE)/leaderboard.wasm $(RELEASE)/leaderboard_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -l -n "Wasmdome Leaderboard"
 	
 keys: keys-account
 keys: keys-module
