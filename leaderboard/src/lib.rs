@@ -2,8 +2,6 @@ extern crate wascc_actor as actor;
 extern crate wasmdome_protocol as protocol;
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate log;
 
 use actor::prelude::*;
 use domain::leaderboard::{Leaderboard, LeaderboardData};
