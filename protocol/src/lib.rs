@@ -131,3 +131,29 @@ pub mod tools {
         Error(String),
     }
 }
+
+pub mod scheduler {
+    use chrono::DateTime;
+    use chrono::Utc;
+
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    pub struct MatchScheduleEntry {
+        pub max_actors: u32,
+        pub board_height: u32,
+        pub board_width: u32,
+        pub max_turns: u32,
+        pub match_start: DateTime<Utc>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    pub struct MatchIdentifier {
+        pub match_id: String,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    pub struct StoredMatch {
+        pub match_id: String,
+        pub entry: MatchScheduleEntry,
+        pub aps_per_turn: u32,
+    }
+}
