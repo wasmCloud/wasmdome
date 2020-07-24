@@ -1,6 +1,6 @@
 [package]
 name = "scheduler"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 
@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wascc-actor = "0.7.2"
-wasmdome-protocol = "0.0.6"
+wasmdome-protocol = { path = "../protocol" }
 chrono = { version = "0.4.11", features = ["serde"] }
 serde = { version = "1.0.114", features = ["derive"]}
 serde_json = "1.0.56"
