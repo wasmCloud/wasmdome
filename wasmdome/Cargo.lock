@@ -1943,6 +1943,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uuid"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fde2f6a4bea1d6e007c4ad38c6839fa71cbb63b6dbf5b595aa38dc9b1093c11"
+dependencies = [
+ "rand 0.7.3",
+]
+
+[[package]]
 name = "vcpkg"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2064,26 +2073,14 @@ dependencies = [
  "serde",
  "serde_json",
  "structopt 0.3.15",
- "wasmdome-domain 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uuid",
+ "wasmdome-domain",
  "wasmdome-protocol",
 ]
 
 [[package]]
 name = "wasmdome-domain"
 version = "0.0.6"
-dependencies = [
- "eventsourcing",
- "eventsourcing-derive",
- "serde",
- "serde_derive",
- "serde_json",
-]
-
-[[package]]
-name = "wasmdome-domain"
-version = "0.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b9f400b79b2c4a8abdb6a2d87d99bce22caf79f78d7b1c35fc62e5cba21a3b1"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
@@ -2100,7 +2097,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "wasmdome-domain 0.0.6",
+ "wasmdome-domain",
 ]
 
 [[package]]

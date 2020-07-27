@@ -1,10 +1,14 @@
+extern crate wasmdome_domain as domain;
 extern crate wasmdome_protocol as protocol;
 
+use protocol::commands::{ArenaControlCommand::*, CreateMatch, MechQueryResponse};
+use protocol::events::MatchEvent;
 use protocol::scheduler::StoredMatch;
 use protocol::tools::{CredentialsRequest, CredentialsResponse};
 use std::{error::Error, path::PathBuf, time::Duration};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
+use uuid::Uuid;
 #[macro_use]
 extern crate prettytable;
 use prettytable::Table;
@@ -55,11 +59,15 @@ enum WasmdomeAction {
 
         /// Board height
         #[structopt(short = "h", long = "height")]
-        height: u32,
+        board_height: u32,
 
         /// Board width
         #[structopt(short = "w", long = "width")]
-        width: u32,
+        board_width: u32,
+
+        /// Action points per turn
+        #[structopt(short = "p", long = "points")]
+        aps_per_turn: u32,
     },
 }
 
@@ -71,9 +79,17 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
         WasmdomeAction::Run {
             max_turns,
             max_actors,
-            height,
-            width,
-        } => run_match(nc, max_turns, max_actors, height, width)?,
+            board_height,
+            board_width,
+            aps_per_turn,
+        } => run_match(
+            nc,
+            max_turns,
+            max_actors,
+            board_height,
+            board_width,
+            aps_per_turn,
+        )?,
     };
     Ok(())
 }
@@ -183,22 +199,84 @@ fn run_match(
     nc: nats::Connection,
     max_turns: u32,
     max_actors: u32,
-    height: u32,
-    width: u32,
+    board_height: u32,
+    board_width: u32,
+    aps_per_turn: u32,
 ) -> Result<(), Box<dyn Error>> {
     // publish game start command onto local lattice (through nc)
-    // let res = nc.request_timeout(
-    //     "wasmdome.public.arena.schedule",
-    //     "",
-    //     std::time::Duration::from_millis(500),
-    // );
     // subscribe to arena events topic and then display match conclusion event, or timeout with an error
 
-    // ensure engine-provider is running
-    // ensure at least 1 mech is scheduled in the match
-    // wasmdome run -t 100 -a 20 -h 8 -w 8, turn limit, actors, height, width
-    // when do we start the match?
-    Ok(())
+    let req = nc.request_timeout(
+        "wasmdome.internal.arena.control",
+        &serde_json::to_vec(&QueryMechs)?,
+        std::time::Duration::from_millis(1500),
+    );
+
+    if req.is_err() {
+        println!(
+            "No response from engine-provider, please ensure you have an engine-provider running."
+        );
+        return Ok(());
+    };
+
+    let res: MechQueryResponse = serde_json::from_slice(&req.unwrap().data)?;
+
+    if res.mechs.len() < 1 {
+        println!(
+            "No mechs were found in the lattice. Ensure you have scheduled at least one mech."
+        );
+        return Ok(());
+    };
+
+    let match_id = Uuid::new_v4().to_string();
+
+    let cm = StartMatch(CreateMatch {
+        match_id: match_id.clone(),
+        actors: res
+            .mechs
+            .iter()
+            .map(|m| m.id.clone())
+            .take(max_actors as usize)
+            .collect(),
+        board_height,
+        board_width,
+        max_turns,
+        aps_per_turn,
+    });
+
+    println!("{:?}", cm);
+
+    nc.request_timeout(
+        "wasmdome.internal.arena.control",
+        &serde_json::to_vec(&cm)?,
+        std::time::Duration::from_millis(500),
+    )?;
+
+    let sub = nc.subscribe(&format!("wasmdome.match.{}.events", match_id).to_string())?;
+
+    loop {
+        let msgs: Vec<MatchEvent> = sub
+            .try_iter()
+            .map(|msg| serde_json::from_slice(&msg.data).unwrap())
+            .collect::<Vec<_>>();
+        if msgs.len() < 1 {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            continue;
+        }
+
+        // Examine last message in buffer
+        match msgs.get(msgs.len() - 1) {
+            Some(MatchEvent::TurnEvent {
+                match_id,
+                turn_event: domain::events::GameEvent::GameFinished { cause },
+                ..
+            }) => {
+                println!("Match \"{}\" completed.\nCause: {:?}", match_id, cause);
+                return Ok(());
+            }
+            _ => std::thread::sleep(std::time::Duration::from_millis(100)),
+        }
+    }
 }
 /*
 
