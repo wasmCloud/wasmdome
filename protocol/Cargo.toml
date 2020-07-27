@@ -1,6 +1,6 @@
 [package]
 name = "wasmdome-protocol"
-version = "0.0.10"
+version = "0.0.11"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 homepage = "https://wasmdome.dev"

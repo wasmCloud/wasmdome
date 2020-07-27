@@ -1,6 +1,6 @@
 [package]
 name = "wasmdome"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 

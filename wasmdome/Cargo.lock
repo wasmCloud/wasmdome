@@ -2060,7 +2060,7 @@ checksum = "7f7b90ea6c632dd06fd765d44542e234d5e63d9bb917ecd64d79778a13bd79ae"
 
 [[package]]
 name = "wasmdome"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "chrono",
  "crossbeam-channel",
@@ -2080,7 +2080,7 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
@@ -2091,7 +2091,7 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-protocol"
-version = "0.0.10"
+version = "0.0.11"
 dependencies = [
  "chrono",
  "serde",
