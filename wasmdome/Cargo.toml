@@ -19,5 +19,5 @@ wasmdome-domain = { path = "../domaincommon" }
 dirs = "3.0.0"
 prettytable-rs = "0.8"
 uuid = { version = "0.8", features = ["v4"] }
-
+crossbeam = "0.7.3"
 chrono = { version = "0.4.13", features = ["serde"] }

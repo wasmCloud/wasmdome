@@ -1,14 +1,15 @@
 extern crate wasmdome_domain as domain;
 extern crate wasmdome_protocol as protocol;
 
+use crossbeam_channel::unbounded;
 use protocol::commands::{ArenaControlCommand::*, CreateMatch, MechQueryResponse};
-use protocol::events::MatchEvent;
+use protocol::events::ArenaEvent;
 use protocol::scheduler::StoredMatch;
-use protocol::tools::{CredentialsRequest, CredentialsResponse};
-use std::{error::Error, path::PathBuf, time::Duration};
+use std::{error::Error, path::PathBuf};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 use uuid::Uuid;
+
 #[macro_use]
 extern crate prettytable;
 use prettytable::Table;
@@ -113,8 +114,8 @@ fn run_match(
     board_height: u32,
     board_width: u32,
 ) -> Result<(), Box<dyn Error>> {
-    // publish game start command onto local lattice (through nc)
-    // subscribe to arena events topic and then display match conclusion event, or timeout with an error
+    let match_id = Uuid::new_v4().to_string();
+    let sub = nc.subscribe("wasmdome.public.arena.events")?;
 
     let req = nc.request_timeout(
         "wasmdome.internal.arena.control",
@@ -138,8 +139,6 @@ fn run_match(
         return Ok(());
     };
 
-    let match_id = Uuid::new_v4().to_string();
-
     let cm = StartMatch(CreateMatch {
         match_id: match_id.clone(),
         actors: res.mechs.iter().map(|m| m.id.clone()).collect(),
@@ -155,31 +154,28 @@ fn run_match(
         std::time::Duration::from_millis(500),
     )?;
 
-    let sub = nc.subscribe(&format!("wasmdome.match.{}.events", match_id).to_string())?;
+    let (s, r) = unbounded();
 
-    loop {
-        let msgs: Vec<MatchEvent> = sub
-            .try_iter()
-            .map(|msg| serde_json::from_slice(&msg.data).unwrap())
-            .collect::<Vec<_>>();
-        if msgs.len() < 1 {
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            continue;
-        }
-
-        // Examine last message in buffer
-        match msgs.get(msgs.len() - 1) {
-            Some(MatchEvent::TurnEvent {
-                match_id,
-                turn_event: domain::events::GameEvent::GameFinished { cause },
-                ..
+    sub.with_handler(move |msg| {
+        let msg = serde_json::from_slice(&msg.data).unwrap();
+        match msg {
+            Some(ArenaEvent::MatchCompleted {
+                match_id, cause, ..
             }) => {
-                println!("Match \"{}\" completed.\nCause: {:?}", match_id, cause);
-                return Ok(());
+                s.send(format!(
+                    "Match \"{}\" completed.\nCause: {:?}",
+                    match_id, cause
+                ))
+                .unwrap();
             }
-            _ => std::thread::sleep(std::time::Duration::from_millis(100)),
-        }
-    }
+            _ => (),
+        };
+        Ok(())
+    });
+
+    println!("{}", r.recv().unwrap());
+
+    Ok(())
 }
 /*
 
