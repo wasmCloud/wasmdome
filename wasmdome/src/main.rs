@@ -53,10 +53,6 @@ enum WasmdomeAction {
         #[structopt(short = "t", long = "max_turns")]
         max_turns: u32,
 
-        /// Maximum number of actors in the match
-        #[structopt(short = "a", long = "max_actors")]
-        max_actors: u32,
-
         /// Board height
         #[structopt(short = "h", long = "height")]
         board_height: u32,
@@ -78,18 +74,10 @@ fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::err
         WasmdomeAction::Schedule { .. } => check_schedule(nc)?,
         WasmdomeAction::Run {
             max_turns,
-            max_actors,
             board_height,
             board_width,
             aps_per_turn,
-        } => run_match(
-            nc,
-            max_turns,
-            max_actors,
-            board_height,
-            board_width,
-            aps_per_turn,
-        )?,
+        } => run_match(nc, max_turns, board_height, board_width, aps_per_turn)?,
     };
     Ok(())
 }
@@ -198,7 +186,6 @@ fn check_schedule(nc: nats::Connection) -> Result<(), Box<dyn Error>> {
 fn run_match(
     nc: nats::Connection,
     max_turns: u32,
-    max_actors: u32,
     board_height: u32,
     board_width: u32,
     aps_per_turn: u32,
@@ -232,12 +219,7 @@ fn run_match(
 
     let cm = StartMatch(CreateMatch {
         match_id: match_id.clone(),
-        actors: res
-            .mechs
-            .iter()
-            .map(|m| m.id.clone())
-            .take(max_actors as usize)
-            .collect(),
+        actors: res.mechs.iter().map(|m| m.id.clone()).collect(),
         board_height,
         board_width,
         max_turns,
