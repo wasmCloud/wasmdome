@@ -9,35 +9,42 @@ use eventsourcing::Aggregate;
 use protocol::events::*;
 use wasmdome_domain as domain;
 
-actor_handlers! { codec::messaging::OP_DELIVER_MESSAGE => handle_message,
-codec::http::OP_HANDLE_REQUEST => produce_leaderboard,
-codec::core::OP_HEALTH_REQUEST => health }
+const ARENA_LEADERBOARD_GET: &str = "wasmdome.internal.arena.leaderboard.get";
 
-pub fn health(_req: codec::core::HealthRequest) -> ReceiveResult {
-    Ok(vec![])
+actor_handlers! {
+    codec::messaging::OP_DELIVER_MESSAGE => handle_message,
+    codec::core::OP_HEALTH_REQUEST => health
 }
 
-fn produce_leaderboard(_msg: codec::http::Request) -> ReceiveResult {
+pub fn health(_req: codec::core::HealthRequest) -> HandlerResult<()> {
+    Ok(())
+}
+
+fn produce_leaderboard() -> HandlerResult<serde_json::Value> {
     let state: LeaderboardData = match &keyvalue::default().get("wasmdome:leaderboard")? {
         Some(lb) => serde_json::from_str(lb)?,
         None => LeaderboardData::default(),
     };
     let result = json!({
-        "scores": state.scores,
+        "stats": state.stats,
+        "mechs": state.mechs,
     });
-    Ok(serialize(codec::http::Response::json(result, 200, "OK"))?)
+    Ok(result)
 }
 
-fn handle_message(msg: codec::messaging::BrokerMessage) -> ReceiveResult {
-    if msg.subject.starts_with(SUBJECT_MATCH_EVENTS_PREFIX) {
+fn handle_message(msg: codec::messaging::BrokerMessage) -> HandlerResult<()> {
+    if msg.subject.starts_with("wasmdome.match.") && msg.subject.ends_with(".events") {
         handle_match_event(msg.body)
+    } else if msg.subject == ARENA_LEADERBOARD_GET {
+        let lb = produce_leaderboard()?;
+        messaging::default().publish(&msg.reply_to, None, &serde_json::to_vec(&lb)?)?;
+        Ok(())
     } else {
-        // Ignore the message
-        Ok(vec![])
+        Err("bad dispatch".into())
     }
 }
 
-fn handle_match_event(msg: Vec<u8>) -> ReceiveResult {
+fn handle_match_event(msg: Vec<u8>) -> HandlerResult<()> {
     let evt: MatchEvent = serde_json::from_slice(&msg)?;
 
     match evt {
@@ -53,8 +60,42 @@ fn handle_match_event(msg: Vec<u8>) -> ReceiveResult {
                 &serde_json::to_string(&new_state)?,
                 None,
             )?;
-            Ok(vec![])
+            Ok(())
         }
-        _ => Ok(vec![]),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use wasmdome_domain::leaderboard::{LeaderboardData, MechSummary, PlayerStats};
+
+    // Here so we can fail a test if we change our serialization structure because
+    // other apps (e.g. website) depend on this format
+    #[test]
+    fn leaderboard_as_json() {
+        let mut lbd = LeaderboardData::default();
+        lbd.stats.insert("boylur".to_string(), boylur_stats());
+        lbd.mechs.insert(
+            "boylur".to_string(),
+            MechSummary {
+                avatar: "boylur".to_string(),
+                name: "Boylur Plait".to_string(),
+                team: "boylur".to_string(),
+                id: "boylur".to_string(),
+            },
+        );
+        let json = serde_json::to_string(&lbd).unwrap();
+        assert_eq!("{\"stats\":{\"boylur\":{\"score\":5000,\"wins\":10,\"draws\":10,\"kills\":100,\"deaths\":0}},\"mechs\":{\"boylur\":{\"id\":\"boylur\",\"name\":\"Boylur Plait\",\"avatar\":\"boylur\",\"team\":\"boylur\"}},\"generation\":0}",         
+        json);
+    }
+
+    fn boylur_stats() -> PlayerStats {
+        PlayerStats {
+            score: 5000,
+            wins: 10,
+            draws: 10,
+            kills: 100,
+            deaths: 0,
+        }
     }
 }

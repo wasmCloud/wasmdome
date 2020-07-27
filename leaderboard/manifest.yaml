@@ -3,21 +3,20 @@
 actors:
     - ./target/wasm32-unknown-unknown/release/leaderboard_signed.wasm
 capabilities:
-    - path: ../../wascc-host/examples/.assets/libwascc_redis.so
-    - path: ../../wascc-host/examples/.assets/libwascc_httpsrv.so
+    - path: ../../wascc-host/examples/.assets/libwascc_redis.so    
     - path: ../../wascc-host/examples/.assets/libwascc_nats.so
+    - path: ../../wascc-host/examples/.assets/libwascc_logging.so
 bindings:
     - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
       capability: "wascc:keyvalue"
       values:
         URL: redis://127.0.0.1:6379
     - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
-      capability: "wascc:http_server"
-      values:
-        PORT: "8081"
-    - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
       capability: "wascc:messaging"
       values:
-        SUBSCRIPTION: "wasmdome.match.*.events"
+        SUBSCRIPTION: "wasmdome.match.*.events,wasmdome.internal.arena.leaderboard.get"
         URL: "nats://127.0.0.1:4222"
+    - actor: "MC2RGAKZRDWQP53TK3H3S7N6CXJ4FMAOZS4GVO24IIWSSLQUY24QS3C4"
+      capability: "wascc:logging"
+      values: 
 

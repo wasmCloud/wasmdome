@@ -13,15 +13,24 @@ const POINTS_MATCH_SURVIVE: usize = 2000;
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PlayerStats {
     pub score: usize,
-    pub wins: usize,    
+    pub wins: usize,
     pub draws: usize,
     pub kills: usize,
-    pub deaths: usize,    
+    pub deaths: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct MechSummary {
+    pub id: String,
+    pub name: String,
+    pub avatar: String,
+    pub team: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LeaderboardData {
     pub stats: HashMap<String, PlayerStats>,
+    pub mechs: HashMap<String, MechSummary>,
     pub generation: u64,
 }
 
@@ -39,6 +48,13 @@ impl Aggregate for Leaderboard {
 
     fn apply_event(state: &Self::State, evt: &Self::Event) -> eventsourcing::Result<Self::State> {
         match evt {
+            GameEvent::MechSpawned {
+                mech,
+                team,
+                avatar,
+                name,
+                ..
+            } => Self::update_mech_map(state, mech, team, avatar, name),
             GameEvent::MechDestroyed {
                 damage_target,
                 damage_source,
@@ -78,7 +94,7 @@ impl Leaderboard {
                     e.score += POINTS_DESTROY;
                     e.kills += 1;
                 })
-                .or_insert(PlayerStats{
+                .or_insert(PlayerStats {
                     score: POINTS_DESTROY,
                     kills: 1,
                     ..Default::default()
@@ -89,11 +105,32 @@ impl Leaderboard {
                 .and_modify(|e| {
                     e.deaths += 1;
                 })
-                .or_insert(PlayerStats{
+                .or_insert(PlayerStats {
                     deaths: 1,
                     ..Default::default()
                 });
         }
+        state.generation += 1;
+
+        Ok(state)
+    }
+
+    fn update_mech_map(
+        state: &LeaderboardData,
+        mech: &str,
+        team: &str,
+        avatar: &str,
+        name: &str,
+    ) -> eventsourcing::Result<LeaderboardData> {
+        let ms = MechSummary {
+            avatar: avatar.to_string(),
+            id: mech.to_string(),
+            name: name.to_string(),
+            team: team.to_string(),
+        };
+        let mut state = state.clone();
+
+        state.mechs.insert(mech.to_string(), ms);
         state.generation += 1;
 
         Ok(state)
@@ -112,7 +149,7 @@ impl Leaderboard {
                 e.score += POINTS_MATCH_WIN;
                 e.wins += 1;
             })
-            .or_insert(PlayerStats{
+            .or_insert(PlayerStats {
                 score: POINTS_MATCH_WIN,
                 wins: 1,
                 ..Default::default()
@@ -136,8 +173,8 @@ impl Leaderboard {
                     e.score += POINTS_MATCH_SURVIVE;
                     e.draws += 1;
                 })
-                .or_insert(PlayerStats{
-                    score:POINTS_MATCH_SURVIVE,
+                .or_insert(PlayerStats {
+                    score: POINTS_MATCH_SURVIVE,
                     draws: 1,
                     ..Default::default()
                 });
@@ -149,6 +186,7 @@ impl Leaderboard {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::Point;
 
     #[test]
     fn award_points_for_kill() {
@@ -171,6 +209,35 @@ mod test {
         assert_eq!(state.stats["al"].kills, 2);
         assert_eq!(state.stats["bob"].deaths, 1);
         assert_eq!(state.stats["steve"].deaths, 1);
+    }
+
+    #[test]
+    fn spawn_updates_map() {
+        let evts = vec![
+            GameEvent::MechSpawned {
+                avatar: "av".to_string(),
+                mech: "al".to_string(),
+                name: "Al Allerson".to_string(),
+                team: "earth".to_string(),
+                position: Point::new(1, 1),
+            },
+            GameEvent::MechSpawned {
+                avatar: "av2".to_string(),
+                mech: "bob".to_string(),
+                name: "Bob Bobberson".to_string(),
+                team: "earth".to_string(),
+                position: Point::new(2, 2),
+            },
+        ];
+
+        let state = LeaderboardData::default();
+        let state = evts.iter().fold(state, |state, evt| {
+            Leaderboard::apply_event(&state, evt).unwrap()
+        });
+
+        assert_eq!(state.mechs.get("al").unwrap().name, "Al Allerson");
+        assert_eq!(state.mechs.get("bob").unwrap().avatar, "av2");
+        assert_eq!(state.mechs.get("al").unwrap().avatar, "av");
     }
 
     #[test]
@@ -210,7 +277,10 @@ mod test {
         let state = evts.iter().fold(state, |state, evt| {
             Leaderboard::apply_event(&state, evt).unwrap()
         });
-        assert_eq!(state.stats["al"].score, POINTS_MATCH_WIN + POINTS_MATCH_SURVIVE);
+        assert_eq!(
+            state.stats["al"].score,
+            POINTS_MATCH_WIN + POINTS_MATCH_SURVIVE
+        );
         assert_eq!(state.stats["bob"].score, POINTS_MATCH_SURVIVE);
         assert_eq!(state.stats["al"].draws, 1);
         assert_eq!(state.stats["bob"].draws, 1);

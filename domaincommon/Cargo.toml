@@ -1,7 +1,7 @@
 [package]
 name = "wasmdome-domain"
 description = "Event Sourced Domain Model for the 'Assembly Mechs: Beyond WasmDome' Game"
-version = "0.0.6"
+version = "0.0.7"
 authors = ["Kevin Hoffman <alothien@gmail.com>"]
 edition = "2018"
 homepage = "https://wasmdome.dev"
