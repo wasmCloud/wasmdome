@@ -173,7 +173,11 @@ fn run_match(
         Ok(())
     });
 
-    println!("{}", r.recv().unwrap());
+    println!(
+        "{}",
+        r.recv_timeout(std::time::Duration::from_millis(5000))
+            .unwrap_or("Timeout occurred retrieving game results.".to_string())
+    );
 
     Ok(())
 }
