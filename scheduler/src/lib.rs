@@ -20,6 +20,9 @@ extern crate log;
 
 extern crate wascc_actor as actor;
 
+extern crate wasmdome_protocol as protocol;
+use protocol::scheduler::*;
+
 const SUBJECT_REQUEST_SCHEDULE: &str = "wasmdome.public.arena.schedule";
 const SUBJECT_ADD_MATCH: &str = "wasmdome.internal.arena.new_match";
 const SUBJECT_DEL_MATCH: &str = "wasmdome.internal.arena.del_match";
@@ -27,8 +30,6 @@ const SUBJECT_DEL_MATCH: &str = "wasmdome.internal.arena.del_match";
 const APS_PER_TURN: u32 = 4;
 
 use actor::prelude::*;
-use chrono::DateTime;
-use chrono::Utc;
 
 actor_handlers! {
     codec::messaging::OP_DELIVER_MESSAGE => handle_message,
@@ -98,25 +99,4 @@ fn match_key(match_id: &str) -> String {
 
 fn match_set_key() -> String {
     "wasmdome:sched_matches".to_string()
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct MatchScheduleEntry {
-    pub max_actors: u32,
-    pub board_height: u32,
-    pub board_width: u32,
-    pub max_turns: u32,
-    pub match_start: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct MatchIdentifier {
-    pub match_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct StoredMatch {
-    match_id: String,
-    entry: MatchScheduleEntry,
-    aps_per_turn: u32,
 }

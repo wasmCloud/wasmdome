@@ -20,9 +20,9 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "chrono"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0fee792e164f78f5fe0c296cc2eb3688a2ca2b70cdff33040922d298203f0c4"
+checksum = "c74d84029116787153e02106bf53e66828452a4b325cc8652b788b5967c0a0b6"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -164,7 +164,7 @@ checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
 name = "scheduler"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "chrono",
  "log",
@@ -295,9 +295,7 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c51abe3ca8a749222324d783a5b320834d3741a87d29f7fa7a361f468b8da12d"
+version = "0.0.6"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
@@ -308,9 +306,7 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-protocol"
-version = "0.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17fe2ce4bdbab3c52aaf9311627128aa462614587e4c33d81c5812f534f7fd01"
+version = "0.0.10"
 dependencies = [
  "chrono",
  "serde",
