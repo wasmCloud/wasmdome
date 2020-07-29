@@ -8,11 +8,14 @@ pub fn handler(mech: impl MechInstruments) -> Vec<MechCommand> {
     let mut cmds = Vec::new();
 
     let corner = closest_corner(&mech);
+
     if let Some(direction) = corner {
+        cmds.push(mech.move_mech(direction));
+        cmds.push(mech.move_mech(direction));
         cmds.push(mech.move_mech(direction));
     } else {
         cmds.push(mech.fire_primary(fire_direction(&mech)));
-        cmds.push(mech.fire_secondary(fire_direction(&mech)));
+        cmds.push(mech.fire_primary(fire_direction(&mech)));
     };
 
     cmds
