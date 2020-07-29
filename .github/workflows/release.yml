@@ -71,14 +71,14 @@ jobs:
         value=`cat release_url/release_url.txt`
         echo ::set-output name=upload_url::$value   
     - name: Set friendly OS label (ubuntu)
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        run: echo ::set-env name=OS_LABEL::ubuntu
+      if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      run: echo ::set-env name=OS_LABEL::ubuntu
     - name: Set friendly OS label (mac)
-        if: ${{ startsWith(matrix.os, 'mac') }}
-        run: echo ::set-env name=OS_LABEL::macos
+      if: ${{ startsWith(matrix.os, 'mac') }}
+      run: echo ::set-env name=OS_LABEL::macos
     - name: Set friendly OS label (ubuntu)
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: echo ::set-env name=OS_LABEL::windows
+      if: ${{ startsWith(matrix.os, 'windows') }}
+      run: echo ::set-env name=OS_LABEL::windows
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
