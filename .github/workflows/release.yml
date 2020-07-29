@@ -1,0 +1,62 @@
+name: Release
+
+on:
+    push:
+      # Sequence of patterns matched against refs/tags
+      tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  rel:
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: true
+
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        label: [ubuntu, windows, macos]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Install wasm32-unknown-unknown target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Install wascap
+      run: cargo install wascap --features "cli"    
+    - name: Prep Signing Keys
+      env:          
+        WASMDOME_ACCOUNT_KEY: ${{ secrets.WASMDOME_ACCOUNT_KEY }}    
+        TURRET1_MODULE_KEY: ${{ secrets.TURRET1_MODULE_KEY }}
+        TURRET2_MODULE_KEY: ${{ secrets.TURRET2_MODULE_KEY }}
+      run: sh keyprep.sh
+    - name: Create Release Builds
+      run: make release
+    - name: Create Release Zip (windows)
+      if: ${{ matrix.label == 'windows' }}
+      run: zip wasmdome-devkit-${{ matrix.label }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome.exe
+    - name: Create Release Zip (non-windows)
+      if: ${{ matrix.label == 'ubuntu' || matrix.label == 'macos' }}
+      run: zip wasmdome-devkit-${{ matrix.label }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ jobs.rel.steps.create_release.outputs.upload_url }}
+        asset_path: ./wasmdome-devkit-${{ matrix.label }}.zip
+        asset_name: wasmdome-devkit-$${ matrix.label }}.zip
+        asset_content_type: application/zip      
+    
