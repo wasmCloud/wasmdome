@@ -190,9 +190,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.56"
+version = "1.0.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3433e879a558dde8b5e8feb2a04899cf34fdde1fafb894687e52105fc1162ac3"
+checksum = "164eacbdb13512ec2745fb09d51fd5b22b0d65ed294a1dcf7285a360c80a675c"
 dependencies = [
  "itoa",
  "ryu",
@@ -306,15 +306,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmdome-domain"
+version = "0.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45afc8af020e0c282fbe1122fd3e7679653e2fc32972087d5f42d9441274aa51"
+dependencies = [
+ "eventsourcing",
+ "eventsourcing-derive",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
 name = "wasmdome-mech-sdk"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
  "wascc-actor",
  "wascc-codec 0.7.2",
- "wasmdome-domain",
+ "wasmdome-domain 0.0.7",
  "wasmdome-protocol",
 ]
 
@@ -328,7 +341,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "wasmdome-domain",
+ "wasmdome-domain 0.0.6",
 ]
 
 [[package]]
