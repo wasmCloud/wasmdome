@@ -16,5 +16,5 @@ categories = ["wasm", "games"]
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-wasmdome-domain = { path = "../domaincommon" }
+wasmdome-domain = "0.0.7"
 chrono = { version = "0.4.13", features = ["serde"] }
