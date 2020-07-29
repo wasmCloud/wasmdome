@@ -11,6 +11,9 @@ readme = "README.md"
 keywords = ["wasmdome", "webassembly", "wasm", "wascc"]
 categories = ["wasm", "games", "api-bindings"]
 
+[lib]
+crate-type = ["lib"]
+
 [dependencies]
 wascc-actor = "0.7.2"
 wascc-codec = "0.7.2"
