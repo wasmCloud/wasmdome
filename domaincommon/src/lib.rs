@@ -20,10 +20,14 @@ pub(crate) const DOMAIN_VERSION: &str = "1.0";
 const DEFAULT_BOARD_HEIGHT: u32 = 100;
 const DEFAULT_BOARD_WIDTH: u32 = 100;
 
+/// The primary accumulator register
 pub const EAX: u32 = 0;
+/// The count register
 pub const ECX: u32 = 1;
+/// The base register
 pub const EBX: u32 = 2;
 
+/// A 2-dimensional coordinate within an arena
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Point {
     pub x: i32,
@@ -156,12 +160,15 @@ pub enum WeaponType {
     Secondary = 1,
 }
 
+/// Represents a value contained within a register. Note that not all registers
+/// support all value types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RegisterValue {
     Number(u64),
     Text(String),
 }
 
+/// An operation performed on a register
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RegisterOperation {
     Accumulate(u64),
@@ -169,6 +176,7 @@ pub enum RegisterOperation {
     Set(RegisterValue),
 }
 
+/// Represents all possible directions at the game engine resolution
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq)]
 pub enum GridDirection {
     North = 0,
@@ -192,6 +200,7 @@ static ALL_DIRECTIONS: [GridDirection; 8] = [
     GridDirection::NorthWest,
 ];
 
+/// The set of initial parameters for a match
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MatchParameters {
     pub match_id: String,
