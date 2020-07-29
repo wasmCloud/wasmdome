@@ -6,7 +6,7 @@ on:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-  rel:
+  release:
     runs-on: ubuntu-latest
     steps:
     - name: Create Release
@@ -19,8 +19,15 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: true
+    - name: Output Release URL File
+      run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+    - name: Save Release URL File for publish
+      uses: actions/upload-artifact@v1
+      with:
+        name: release_url
+        path: release_url.txt
 
-  build:
+  publish:
     needs: rel
     strategy:
       matrix:
@@ -31,6 +38,10 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v1
+    - name: Load Release URL File from release job
+      uses: actions/download-artifact@v1
+      with:
+        name: release_url
     - name: Install wasm32-unknown-unknown target
       run: rustup target add wasm32-unknown-unknown
     - name: Install wascap
@@ -45,17 +56,25 @@ jobs:
       run: make release
     - name: Create Release Zip (windows)
       if: ${{ startsWith(matrix.os, 'windows') }}
-      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome.exe
-    - name: Create Release Zip (non-windows)
-      if: ${{ startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac') }}
-      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome    
+      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome.exe ./engine-provider/target/release/engine_provider.dll
+    - name: Create Release Zip (ubuntu)
+      if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome ./engine-provider/target/release/libengine_provider.so
+    - name: Create Release Zip (mac)
+      if: ${{ startsWith(matrix.os, 'mac') }}
+      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome ./engine-provider/target/release/libengine_provider.dylib
+    - name: Get Release File Name & Upload URL
+      id: get_release_info
+      run: |        
+        value=`cat release_url/release_url.txt`
+        echo ::set-output name=upload_url::$value    
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.rel.steps.create_release.outputs.upload_url }}
+        upload_url: ${{ steps.get_release_info.outputs.upload_url }}
         asset_path: ./wasmdome-devkit-${{ matrix.os }}.zip
         asset_name: wasmdome-devkit-$${ matrix.os }}.zip
         asset_content_type: application/zip      
