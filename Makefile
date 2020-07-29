@@ -11,4 +11,4 @@ release: test
 #	cd historian && make release
 #	cd leaderboard && make release	
 	cd NPC/turret && make release
-	
+	cd NPC/corner-turret && make release

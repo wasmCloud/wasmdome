@@ -2089,13 +2089,26 @@ dependencies = [
  "serde_json",
  "structopt 0.3.15",
  "uuid",
- "wasmdome-domain",
+ "wasmdome-domain 0.0.7",
  "wasmdome-protocol",
 ]
 
 [[package]]
 name = "wasmdome-domain"
 version = "0.0.7"
+dependencies = [
+ "eventsourcing",
+ "eventsourcing-derive",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
+name = "wasmdome-domain"
+version = "0.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45afc8af020e0c282fbe1122fd3e7679653e2fc32972087d5f42d9441274aa51"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
@@ -2112,7 +2125,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "wasmdome-domain",
+ "wasmdome-domain 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

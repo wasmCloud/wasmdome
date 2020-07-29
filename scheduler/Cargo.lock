@@ -295,7 +295,9 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.6"
+version = "0.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45afc8af020e0c282fbe1122fd3e7679653e2fc32972087d5f42d9441274aa51"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
@@ -306,7 +308,7 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-protocol"
-version = "0.0.10"
+version = "0.0.11"
 dependencies = [
  "chrono",
  "serde",

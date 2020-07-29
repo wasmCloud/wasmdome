@@ -304,9 +304,9 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-domain"
-version = "0.0.6"
+version = "0.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b9f400b79b2c4a8abdb6a2d87d99bce22caf79f78d7b1c35fc62e5cba21a3b1"
+checksum = "45afc8af020e0c282fbe1122fd3e7679653e2fc32972087d5f42d9441274aa51"
 dependencies = [
  "eventsourcing",
  "eventsourcing-derive",
@@ -317,7 +317,9 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-mech-sdk"
-version = "0.0.6"
+version = "0.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a1a1c6ac9a9d562f3cce682839543ae69abd641a83ffd990921883fe2ac7545"
 dependencies = [
  "serde",
  "serde_derive",
@@ -330,9 +332,9 @@ dependencies = [
 
 [[package]]
 name = "wasmdome-protocol"
-version = "0.0.9"
+version = "0.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6e6d1f3386b444adfa5bb13fc8b6b03a806a8e920203b7e54647d82ab4d186a"
+checksum = "7191232fd4af1bcd12e5e5b38417e90d9cc431542019e2bb8674725b441c2f63"
 dependencies = [
  "chrono",
  "serde",

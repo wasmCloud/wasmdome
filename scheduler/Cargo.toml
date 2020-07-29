@@ -18,3 +18,4 @@ log = "0.4.8"
 [profile.release]
 # Optimize for small code size
 opt-level = "s"
+lto = true
