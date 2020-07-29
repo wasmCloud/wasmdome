@@ -24,8 +24,7 @@ jobs:
     needs: rel
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        label: [ubuntu, windows, macos]
+        os: [ubuntu-latest, windows-latest, macos-latest]        
 
     runs-on: ${{ matrix.os }}
 
@@ -45,19 +44,19 @@ jobs:
     - name: Create Release Builds
       run: make release
     - name: Create Release Zip (windows)
-      if: ${{ matrix.label == 'windows' }}
-      run: zip wasmdome-devkit-${{ matrix.label }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome.exe
+      if: ${{ startsWith(matrix.os, 'windows') }}
+      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome.exe
     - name: Create Release Zip (non-windows)
-      if: ${{ matrix.label == 'ubuntu' || matrix.label == 'macos' }}
-      run: zip wasmdome-devkit-${{ matrix.label }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome
+      if: ${{ startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'mac') }}
+      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome    
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.rel.outputs.upload_url }}
-        asset_path: ./wasmdome-devkit-${{ matrix.label }}.zip
-        asset_name: wasmdome-devkit-$${ matrix.label }}.zip
+        upload_url: ${{ needs.rel.steps.create_release.outputs.upload_url }}
+        asset_path: ./wasmdome-devkit-${{ matrix.os }}.zip
+        asset_name: wasmdome-devkit-$${ matrix.os }}.zip
         asset_content_type: application/zip      
     
