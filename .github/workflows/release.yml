@@ -76,6 +76,6 @@ jobs:
       with:
         upload_url: ${{ steps.get_release_info.outputs.upload_url }}
         asset_path: ./wasmdome-devkit-${{ matrix.os }}.zip
-        asset_name: wasmdome-devkit-$${ matrix.os }}.zip
+        asset_name: wasmdome-devkit-${{ matrix.os }}.zip
         asset_content_type: application/zip      
     
