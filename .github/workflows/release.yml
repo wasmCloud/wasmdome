@@ -54,20 +54,31 @@ jobs:
       run: sh keyprep.sh
     - name: Create Release Builds
       run: make release
-    - name: Create Release Zip (windows)
+    - name: Create Release Zip (wasms)
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm
+    - name: Append Release Zip (windows)
       if: ${{ startsWith(matrix.os, 'windows') }}
-      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome.exe ./engine-provider/target/release/engine_provider.dll
-    - name: Create Release Zip (ubuntu)
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./wasmdome/target/release/wasmdome.exe ./engine-provider/target/release/engine_provider.dll
+    - name: Append Release Zip (ubuntu)
       if: ${{ startsWith(matrix.os, 'ubuntu') }}
-      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome ./engine-provider/target/release/libengine_provider.so
-    - name: Create Release Zip (mac)
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./wasmdome/target/release/wasmdome ./engine-provider/target/release/libengine_provider.so
+    - name: Append Release Zip (mac)
       if: ${{ startsWith(matrix.os, 'mac') }}
-      run: zip wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome ./engine-provider/target/release/libengine_provider.dylib
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./wasmdome/target/release/wasmdome ./engine-provider/target/release/libengine_provider.dylib
     - name: Get Release File Name & Upload URL
       id: get_release_info
       run: |        
         value=`cat release_url/release_url.txt`
-        echo ::set-output name=upload_url::$value    
+        echo ::set-output name=upload_url::$value   
+    - name: Set friendly OS label (ubuntu)
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: echo ::set-env name=OS_LABEL::ubuntu
+    - name: Set friendly OS label (mac)
+        if: ${{ startsWith(matrix.os, 'mac') }}
+        run: echo ::set-env name=OS_LABEL::macos
+    - name: Set friendly OS label (ubuntu)
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: echo ::set-env name=OS_LABEL::windows
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
@@ -76,6 +87,6 @@ jobs:
       with:
         upload_url: ${{ steps.get_release_info.outputs.upload_url }}
         asset_path: ./wasmdome-devkit-${{ matrix.os }}.zip
-        asset_name: wasmdome-devkit-${{ matrix.os }}.zip
+        asset_name: wasmdome-devkit-${{ OS_LABEL }}-${{ github.ref }}.zip
         asset_content_type: application/zip      
     
