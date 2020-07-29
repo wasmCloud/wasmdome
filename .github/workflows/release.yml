@@ -28,7 +28,7 @@ jobs:
         path: release_url.txt
 
   publish:
-    needs: rel
+    needs: release
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]        
