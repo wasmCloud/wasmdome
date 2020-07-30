@@ -2,20 +2,23 @@
 
 _The year is 2020 and our containerized civilization is falling apart. A cruel and villainous DevOps demon named **Boylur Plait** has descended from the cloud to Earth to challenge mankind to a tournament._
 
-To win this tournament, _Assembly Mechs_ must compete in an absurdly over-dramatized contest. These mechs will challenge their creator’s ability to write code that will outlast and defeat everything that the demon and its nearly infinite hordes pit against us. Humanity’s only hope is to master a technology called **WebAssembly**, win the tournament, and prove to the cloud nemesis that this world is well protected.
+## Building a Mech
 
-In this game, players will create Assembly Mechs to compete for supremacy in the WasmDome. Developers create a new mech by building a Rust [waSCC](https://wascc.dev) actor, signing their actor module, and uploading it to the _WasmDome_.
+Developers build robots or _mechs_ for competition in the wasmdome using the [wasmdome sdk](https://docs.rs/wasmdome-mech-sdk). There will be a screencast tutorial available walking developers through the process. Once you've created your mech, compiled it, and signed it (the new mech template comes with a `Makefile` pre-configured to generate your keys and sign your mech properly), you're ready to compete.
 
-Will your mech survive? Is your code good enough to stand against the most vicious enemies the cloud can muster? Upload your mech to the WasmDome and find out, watching it participate in match after match as it collaborates with other mechs to fight for humanity’s survival. Will your efforts be enough to save the world? _Not likely_, but it’ll be fun trying!
+## Competing Offline
 
-Features:
+You'll need the following tools installed on your machine to host your mech and compete offline:
 
-* Build, sign, and test your Assembly Mechs in a local WasmDome
-* Upload your mechs to the live, online WasmDome when you’re ready for the action to begin!
-* Watch matches live or review them afterward to learn and improve your mech’s code
-* Check leaderboards and upcoming matches to see the best Assembly Mechs in action
-* Learn how easy it is to build waSCC actors as you play the game
+* **NATS Server** - You can use `brew` to install it on a Mac, or run `curl -sf https://gobinaries.com/nats-io/nats-server | sh` to install the NATS server on _any_ supported OS and architecture. Don't worry, the NATS binary is less than _20MB_
+* **wascap** - You'll need the `wascap` tool so you can embed secure tokens in your WebAssembly modules. Use `cargo install wascap --features "cli"` to install it, optionally adding `--force` if you're upgrading to the latest version from a previous one.
+* **nk** - You'll need the `nk` tool to generate the ed25519 keys required to sign secure tokens. Use `cargo install nkeys --features "cli"` to install the tool
+* **wascc-host** - You'll need `wascc-host` to be able to host actors and capability providers. Use `cargo install wascc-host --features "bin lattice manifest"` to install the tool with all the options we need to compete in the arena
+* **WasmDome Dev Kit** - Install the dev kit appropriate for your system. You can find the ZIP files in the [releases](https://github.com/wascc/wasmdome/releases) section of the WasmDome repository. These ZIP files contain a bundle of pre-signed NPCs that you can use in your offline matches, the `wasmdome` CLI tool, and the WasmDome Engine _capability provider_.
 
-## DISCLAIMER
+With all of this set up, and NATS server running (you can run `./nats-server -a 127.0.0.1` to start up an isolated server that supports [waSCC lattice](https://wascc.dev/docs/lattice/overview/)), you can use the `wasmdome` CLI to guide you through the process of running your own local WasmDome arena.
 
-This game is currently under active, rapid development and is _not_ remotely complete or tested. Use these repos at your own risk.
+## Competing Online
+
+To compete in the online WasmDome arena, you'll want to register at [wasmdome.dev](https://wasmdome.dev). Follow the instructions online and once a match is coming up soon, you'll be able to use the `wasmdome` CLI to claim a set of credentials that you can use to tell your NATS server to run as a _leaf node_ connected to the live, public lattice where the matches take place. You'll be able to see your mech appear in the lobby as soon as you join the public lattice.
+
