@@ -13,7 +13,7 @@ Run the following commands to make sure that you have the latest versions of all
 curl -sf https://gobinaries.com/nats-io/nats-server | sh
 cargo install wascap --features "cli" --force
 cargo install nkeys --features "cli" --force
-cargo install wascc-host --features "bin latice manifest" --force
+cargo install wascc-host --features "bin lattice manifest" --force
 (download and install the wasmdome dev kit)
 ```
 
