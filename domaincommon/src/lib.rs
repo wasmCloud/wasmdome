@@ -39,6 +39,10 @@ impl Point {
         Point { x, y }
     }
 
+    pub fn distance_to(&self, target: &Point) -> u32 {
+        ((target.x - self.x).pow(2) as f64 + (target.y - self.y).pow(2) as f64).sqrt() as u32
+    }
+
     pub fn bearing(&self, target: &Point) -> GridDirection {
         let dx = (target.x - self.x) as f64;
         let dy = (target.y - self.y) as f64;
@@ -343,5 +347,17 @@ mod test {
             Point::new(9, 11).bearing(&Point::new(4, 11)),
             GridDirection::West
         );
+    }
+
+    #[test]
+    fn compute_distance() {
+        let mech_position = Point::new(3, 3);
+
+        assert_eq!(mech_position.distance_to(&Point::new(3, 4)), 1);
+        assert_eq!(mech_position.distance_to(&Point::new(5, 2)), 2);
+        assert_eq!(mech_position.distance_to(&Point::new(0, 2)), 3);
+        assert_eq!(mech_position.distance_to(&Point::new(0, 0)), 4);
+        assert_eq!(mech_position.distance_to(&Point::new(3, 3)), 0);
+        assert_eq!(mech_position.distance_to(&Point::new(123, 456)), 468);
     }
 }
