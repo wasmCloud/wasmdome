@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/kode_frieze.wasm $(DEBUG)/kode_frieze_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "kode_frieze Mech" -t npc -t kodefriez
+	wascap sign $(DEBUG)/kode_frieze.wasm $(DEBUG)/kode_frieze_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Kode Frieze" -t npc -t avatar-kodefriez
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/kode_frieze.wasm $(RELEASE)/kode_frieze_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "kode_frieze Mech" -t npc -t kodefriez
+	wascap sign $(RELEASE)/kode_frieze.wasm $(RELEASE)/kode_frieze_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Kode Frieze" -t npc -t avatar-kodefriez
 	
 keys: keys-account
 keys: keys-module

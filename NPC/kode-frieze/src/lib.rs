@@ -50,6 +50,7 @@ fn seek_and_destroy_target(mech: &impl MechInstruments, scan: Vec<RadarPing>) ->
                     vec![
                          mech.register_set(EBX, RegisterValue::Text(target.id.clone())),
                          mech.fire_primary(mech.direction_to(&target.location)),
+                         mech.fire_primary(mech.direction_to(&target.location)),
                     ]
                } else {
                     vec![mech.request_radar(), mech.register_acc(ECX, 1)]
@@ -59,6 +60,7 @@ fn seek_and_destroy_target(mech: &impl MechInstruments, scan: Vec<RadarPing>) ->
                if let Some(target) = scan.get(0) {
                     vec![
                          mech.register_set(EBX, RegisterValue::Text(target.id.clone())),
+                         mech.fire_primary(mech.direction_to(&target.location)),
                          mech.fire_primary(mech.direction_to(&target.location)),
                     ]
                } else {
