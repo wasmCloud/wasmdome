@@ -1,13 +1,13 @@
 name: Release
 
 on:
-    push:
-      # Sequence of patterns matched against refs/tags
-      tags:
+  push:  
+    tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-  rel:
+  release:
+    runs-on: ubuntu-latest
     steps:
     - name: Create Release
       id: create_release
@@ -19,18 +19,32 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: true
+    - name: Output Release URL File
+      run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+    - name: Save Release URL File for publish
+      uses: actions/upload-artifact@v1
+      with:
+        name: release_url
+        path: release_url.txt
 
-  build:
+  publish:
+    needs: release
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        label: [ubuntu, windows, macos]
+        os: [ubuntu-latest, macos-latest]        
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@v1
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
+    - name: Load Release URL File from release job
+      uses: actions/download-artifact@v1
+      with:
+        name: release_url
     - name: Install wasm32-unknown-unknown target
       run: rustup target add wasm32-unknown-unknown
     - name: Install wascap
@@ -40,23 +54,42 @@ jobs:
         WASMDOME_ACCOUNT_KEY: ${{ secrets.WASMDOME_ACCOUNT_KEY }}    
         TURRET1_MODULE_KEY: ${{ secrets.TURRET1_MODULE_KEY }}
         TURRET2_MODULE_KEY: ${{ secrets.TURRET2_MODULE_KEY }}
+        KODEFRIEZE_MODULE_KEY: ${{ secrets.KODEFRIEZE_MODULE_KEY }}
       run: sh keyprep.sh
     - name: Create Release Builds
       run: make release
-    - name: Create Release Zip (windows)
-      if: ${{ matrix.label == 'windows' }}
-      run: zip wasmdome-devkit-${{ matrix.label }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome.exe
-    - name: Create Release Zip (non-windows)
-      if: ${{ matrix.label == 'ubuntu' || matrix.label == 'macos' }}
-      run: zip wasmdome-devkit-${{ matrix.label }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./wasmdome/target/release/wasmdome
+    - name: Create Release Zip (wasms)
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./NPC/kode-frieze/target/wasm32-unknown-unknown/release/kode_frieze_s.wasm
+    - name: Append Release Zip (windows)
+      if: ${{ startsWith(matrix.os, 'windows') }}
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./wasmdome/target/release/wasmdome.exe ./engine-provider/target/release/engine_provider.dll
+    - name: Append Release Zip (ubuntu)
+      if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./wasmdome/target/release/wasmdome ./engine-provider/target/release/libengine_provider.so
+    - name: Append Release Zip (mac)
+      if: ${{ startsWith(matrix.os, 'mac') }}
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./wasmdome/target/release/wasmdome ./engine-provider/target/release/libengine_provider.dylib
+    - name: Get Release File Name & Upload URL
+      id: get_release_info
+      run: |        
+        value=`cat release_url/release_url.txt`
+        echo ::set-output name=upload_url::$value   
+    - name: Set friendly OS label (ubuntu)
+      if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      run: echo ::set-env name=OS_LABEL::ubuntu
+    - name: Set friendly OS label (mac)
+      if: ${{ startsWith(matrix.os, 'mac') }}
+      run: echo ::set-env name=OS_LABEL::macos
+    - name: Set friendly OS label (ubuntu)
+      if: ${{ startsWith(matrix.os, 'windows') }}
+      run: echo ::set-env name=OS_LABEL::windows    
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ jobs.rel.steps.create_release.outputs.upload_url }}
-        asset_path: ./wasmdome-devkit-${{ matrix.label }}.zip
-        asset_name: wasmdome-devkit-$${ matrix.label }}.zip
-        asset_content_type: application/zip      
-    
+        upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+        asset_path: ./wasmdome-devkit-${{ matrix.os }}.zip
+        asset_name: wasmdome-devkit-${{ env.OS_LABEL }}-${{ steps.get_version.outputs.VERSION }}.zip
+        asset_content_type: application/zip  

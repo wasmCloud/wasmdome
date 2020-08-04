@@ -11,28 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Prep Signing Keys
-        env:          
-          WASMDOME_ACCOUNT_KEY: ${{ secrets.WASMDOME_ACCOUNT_KEY }}          
-          #HISTORIAN_MODULE_KEY: ${{ secrets.HISTORIAN_MODULE_KEY }}
-          #LEADERBOARD_MODULE_KEY: ${{ secrets.LEADERBOARD_MODULE_KEY }}          
-          TURRET1_MODULE_KEY: ${{ secrets.TURRET1_MODULE_KEY }}
-          TURRET2_MODULE_KEY: ${{ secrets.TURRET2_MODULE_KEY }}
-        run: sh keyprep.sh
+      - uses: actions/checkout@v2      
       - name: Install wasm32-unknown-unknown target
         run: rustup target add wasm32-unknown-unknown
       - name: Install wascap
         run: cargo install wascap --features "cli"
-      - name: Build Release
-        run: make release
-      - name: Upload turret 1
-        uses: actions/upload-artifact@v1
-        with:
-          name: turret1
-          path: NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm
-      - name: Upload turret 2
-        uses: actions/upload-artifact@v1
-        with:
-          name: turret2
-          path: NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm
+      - name: Build engine Provider
+        run: cd engine-provider && cargo build --verbose --release
+      - name: Build mech SDK
+        run: cd mech-sdk && cargo test
