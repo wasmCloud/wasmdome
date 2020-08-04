@@ -29,7 +29,10 @@ The following is a list of the tools you'll need to compete on or offline:
 
 With all of the pre-requisites set up, and NATS server running (you can run `./nats-server -a 127.0.0.1` to start up an isolated server that supports [waSCC lattice](https://wascc.dev/docs/lattice/overview/)), you can use the `wasmdome` CLI to guide you through the process of running your own local WasmDome arena.
 
+[![Assembly Mechs: Beyond Wasmdome Offline Tutorial](http://img.youtube.com/vi/xjy61n7frHo/0.jpg)](http://www.youtube.com/watch?v=xjy61n7frHo "Assembly Mechs: Beyond Wasmdome Offline Tutorial")
+
 ## Competing Online
 
 To compete in the online WasmDome arena, you'll want to register at [wasmdome.dev](https://wasmdome.dev). Follow the instructions online and once a match is coming up soon, you'll be able to use the `wasmdome` CLI to claim a set of credentials that you can use to tell your NATS server to run as a _leaf node_ connected to the live, public lattice where the matches take place. You'll be able to see your mech appear in the lobby as soon as you join the public lattice.
 
+[![Assembly Mechs: Beyond Wasmdome Online Tutorial](http://img.youtube.com/vi/PBQ1tyeXrCA/0.jpg)](http://www.youtube.com/watch?v=PBQ1tyeXrCA "Assembly Mechs: Beyond Wasmdome Online Tutorial")
