@@ -11,19 +11,19 @@ Developers build robots or _mechs_ for competition in the wasmdome using the [wa
 Run the following commands to make sure that you have the latest versions of all the required tools:
 
 
-### Install Nats:
+#### Install Nats
 ```
 curl -sf https://gobinaries.com/nats-io/nats-server | sh
 ```
 
-### Install Rust (Optional)
+#### Install Rust (Optional)
 ```
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 rustup target add wasm32-unknown-unknown
 ```
 
-### Install Required Rust Packages
+#### Install Required Rust Packages
 ```
 cargo install cargo-generate
 cargo install wascap --features "cli" --force
