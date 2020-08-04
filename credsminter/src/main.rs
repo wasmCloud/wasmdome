@@ -1,13 +1,13 @@
 use nkeys::KeyPair;
 use redis::{Commands, RedisResult};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::Serialize;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 extern crate wasmdome_protocol as protocol;
 use protocol::tools::{CredentialsRequest, CredentialsResponse, TokenRequest};
 
-#[macro_use]
 extern crate serde;
+
 #[macro_use]
 extern crate log;
 
@@ -23,12 +23,15 @@ const SIGNING_KEY_ENV: &str = "SIGNING_KEY";
 const OTT_EXPIRES_KEY_ENV: &str = "OTT_EXPIRES_SECONDS";
 const OTT_DEFAULT_EXPIRES_SECONDS: &str = "300"; // 5 minutes
 const QUEUE: &str = "credsminter";
-const CREDS_EXPIRE_MINUTES: u64 = 20;
+const CREDS_EXPIRE_DEFAULT_MINUTES: u64 = 20;
+const CREDS_EXPIRE_KEY: &str = "CREDS_EXPIRES_MINUTES";
 
 fn main() -> Result<()> {
     let _ = env_logger::builder().format_module_path(false).try_init();
     info!("Starting up Credentials/OTT minter");
     let signing_key = std::env::var(SIGNING_KEY_ENV).unwrap();
+    let signer = KeyPair::from_seed(&signing_key)?;
+    info!("Signing creds with issuer {}", signer.public_key());
 
     let nc = nats::connect("127.0.0.1")?; // Connect to the leaf node on loopback
     let redis_url = std::env::var(REDIS_URL_ENV).unwrap_or("redis://0.0.0.0:6379".into());
@@ -52,7 +55,7 @@ fn main() -> Result<()> {
         .with_handler(move |msg| {
             let redisclient = redis::Client::open(r.to_string()).unwrap();
             let mut con_b = redisclient.get_connection().unwrap();
-            generate_creds(msg, &mut con_b, signing_key.to_string());
+            generate_creds(msg, &mut con_b, signer.clone());
             Ok(())
         });
 
@@ -76,7 +79,7 @@ fn ott_key(ott: &str) -> String {
     format!("wasmdome:ott:{}", ott)
 }
 
-fn generate_creds(msg: nats::Message, con: &mut redis::Connection, signing_key: String) {
+fn generate_creds(msg: nats::Message, con: &mut redis::Connection, signer: KeyPair) {
     info!("Exchanging OTT for credentials");
     let req: CredentialsRequest = serde_json::from_slice(&msg.data).unwrap();
     let key = ott_key(&req.token);
@@ -90,7 +93,7 @@ fn generate_creds(msg: nats::Message, con: &mut redis::Connection, signing_key: 
                     "Attempt to exchange token for invalid account".to_string(),
                 )
             } else {
-                let (jwt, seed) = mint_creds(&signing_key).unwrap();
+                let (jwt, seed) = mint_creds(&signer).unwrap();
                 let _: u32 = con.del(ott_key(&req.token)).unwrap();
                 CredentialsResponse::Valid {
                     user_jwt: jwt,
@@ -107,8 +110,7 @@ fn generate_creds(msg: nats::Message, con: &mut redis::Connection, signing_key: 
         .unwrap();
 }
 
-fn mint_creds(signing_key: &str) -> Result<(String, String)> {
-    let signer = KeyPair::from_seed(signing_key)?;
+fn mint_creds(signer: &KeyPair) -> Result<(String, String)> {
     let user = KeyPair::new_user();
     let header = claims_header();
     let creds = gen_creds(&user.public_key(), &signer.public_key(), "Generated User");
@@ -117,7 +119,12 @@ fn mint_creds(signing_key: &str) -> Result<(String, String)> {
 }
 
 fn gen_creds(sub: &str, iss: &str, name: &str) -> serde_json::Value {
-    let exp = (60 * CREDS_EXPIRE_MINUTES) + since_the_epoch().as_secs(); // expire in 1 hour
+    let creds_expiration_minutes: u64 = std::env::var(CREDS_EXPIRE_KEY)
+        .unwrap_or(CREDS_EXPIRE_DEFAULT_MINUTES.to_string())
+        .parse()
+        .unwrap();
+
+    let exp = (60 * creds_expiration_minutes) + since_the_epoch().as_secs();
     let nid = nuid::next().to_string();
     json!({
         "jti": nid,

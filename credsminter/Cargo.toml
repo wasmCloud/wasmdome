@@ -7,14 +7,14 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wascap = "0.4.7"
+wascap = "0.5.0"
 serde = { version = "1.0.114", features = ["derive"]}
-serde_json = "1.0.56"
+serde_json = "1.0.57"
 nkeys = "0.0.9"
 nuid = "0.2.1"
 base64 = "0.12.3"
-log = "0.4.8"
+log = "0.4.11"
 env_logger = "0.7.1"
-redis = "0.16.0"
-nats = "0.6.0"
-wasmdome-protocol = "0.0.6"
+redis = "0.17.0"
+nats = "0.7.2"
+wasmdome-protocol = "0.0.11"
