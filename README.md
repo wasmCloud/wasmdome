@@ -29,8 +29,10 @@ cargo install cargo-generate
 cargo install wascap --features "cli" --force
 cargo install nkeys --features "cli" --force
 cargo install wascc-host --features "bin lattice manifest" --force
-(download and install the wasmdome dev kit)
 ```
+
+#### Download and Install Wasmdome Dev Kit
+Source code and precompiled binaries for multiple platforms are available under the [releases](https://github.com/wascc/wasmdome/releases) tab.
 
 The following is a list of the tools you'll need to compete on or offline:
 
