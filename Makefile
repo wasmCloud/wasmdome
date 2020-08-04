@@ -12,4 +12,4 @@ release: test
 #	cd leaderboard && make release	
 	cd NPC/turret && make release
 	cd NPC/corner-turret && make release
-	cp NPC/kode-frieze && make release
+	cd NPC/kode-frieze && make release
