@@ -107,6 +107,11 @@ fn times_up_lets_do_this(mech: &impl MechInstruments, enemy: &RadarPing) -> Vec<
                mech.fire_primary(mech.direction_to(&enemy.location)),
                mech.register_set(EBX, RegisterValue::Text(enemy.id.to_string())),
           ]
+     } else if distance <= mech.secondary_range() {
+          vec![
+               mech.fire_secondary(mech.direction_to(&enemy.location)),
+               mech.register_set(EBX, RegisterValue::Text(enemy.id.to_string())),
+          ]
      } else {
           vec![
                mech.move_mech(mech.direction_to(&enemy.location)),
