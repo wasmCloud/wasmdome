@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/corner_turret.wasm $(DEBUG)/corner_turret_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -t npc -t avatar-turret2 -n "Turret"
+	wascap sign $(DEBUG)/corner_turret.wasm $(DEBUG)/corner_turret_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -t npc -t avatar-turret-2 -n "Corner Turret"
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/corner_turret.wasm $(RELEASE)/corner_turret_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -t npc -t avatar-turret2 -n "Turret"
+	wascap sign $(RELEASE)/corner_turret.wasm $(RELEASE)/corner_turret_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -t npc -t avatar-turret-2 -n "Corner Turret"
 	
 keys: keys-account
 keys: keys-module

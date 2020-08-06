@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/leaderboard.wasm $(DEBUG)/leaderboard_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -l -n "Wasmdome Leaderboard"
+	wascap sign $(DEBUG)/boylur_plait.wasm $(DEBUG)/boylur_plait_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Boylur Plait" -t npc -t avatar-boylur
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/leaderboard.wasm $(RELEASE)/leaderboard_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -g -k -l -n "Wasmdome Leaderboard"
+	wascap sign $(RELEASE)/boylur_plait.wasm $(RELEASE)/boylur_plait_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Boylur Plait" -t npc -t avatar-boylur
 	
 keys: keys-account
 keys: keys-module

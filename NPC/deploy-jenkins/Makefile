@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/deploy_jenkins.wasm $(DEBUG)/deploy_jenkins_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Deeploy Jennkins" -t npc -t avatar-deployjenkins
+	wascap sign $(DEBUG)/deeploy_jenkinns.wasm $(DEBUG)/deeploy_jenkinns_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Deeploy Jenkinns" -t npc -t avatar-deployjenkins
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/deploy_jenkins.wasm $(RELEASE)/deploy_jenkins_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Deeploy Jennkins" -t npc -t avatar-deployjenkins
+	wascap sign $(RELEASE)/deeploy_jenkinns.wasm $(RELEASE)/deeploy_jenkinns_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Deeploy Jenkinns" -t npc -t avatar-deployjenkins
 	
 keys: keys-account
 keys: keys-module

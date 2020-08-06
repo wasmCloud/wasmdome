@@ -130,16 +130,18 @@ fn move_mech(mech: &impl MechInstruments) -> MechCommand {
      mech.move_mech(move_direction(mech.position(), mech.world_size()))
 }
 
-//TODO: Validate this moves jenkins with the correct behavior
 fn move_direction(pos: Point, gb: GameBoard) -> GridDirection {
      // Run in a quadrant square pattern
-     if pos.y >= gb.height as i32 / 4 {
+     let quarter_height = gb.height as i32 / 4;
+     let quarter_width = gb.width as i32 / 4;
+
+     if pos.x <= quarter_width && pos.y < 3 * quarter_height {
           GridDirection::North
-     } else if pos.x >= gb.width as i32 / 4 {
-          GridDirection::West
-     } else if pos.y < gb.height as i32 / 4 {
+     } else if pos.x < 3 * quarter_width && pos.y >= 3 * quarter_height {
+          GridDirection::East
+     } else if pos.x >= 3 * quarter_width && pos.y >= quarter_height {
           GridDirection::South
      } else {
-          GridDirection::East
+          GridDirection::West
      }
 }

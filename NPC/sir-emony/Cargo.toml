@@ -1,7 +1,7 @@
 [package]
-name = "deeploy-jenkinns"
+name = "sir-emony"
 version = "0.0.1"
-authors = ["Brooks Townsend <brooks.townsend@capitalone.com>"]
+authors = ["Brooks Townsend <brooksmtownsend@gmail.com>"]
 edition = "2018"
 
 [lib]
