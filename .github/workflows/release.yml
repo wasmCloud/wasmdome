@@ -55,11 +55,14 @@ jobs:
         TURRET1_MODULE_KEY: ${{ secrets.TURRET1_MODULE_KEY }}
         TURRET2_MODULE_KEY: ${{ secrets.TURRET2_MODULE_KEY }}
         KODEFRIEZE_MODULE_KEY: ${{ secrets.KODEFRIEZE_MODULE_KEY }}
+        DEPLOY_MODULE_KEY: ${{ secrets.DEPLOY_MODULE_KEY }}
+        SIREMONY_MODULE_KEY: ${{ secrets.SIREMONY_MODULE_KEY }}
+        BOYLUR_MODULE_KEY: ${{ secrets.BOYLUR_MODULE_KEY }}
       run: sh keyprep.sh
     - name: Create Release Builds
       run: make release
     - name: Create Release Zip (wasms)
-      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./NPC/kode-frieze/target/wasm32-unknown-unknown/release/kode_frieze_s.wasm
+      run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./NPC/turret/target/wasm32-unknown-unknown/release/turret_signed.wasm ./NPC/corner-turret/target/wasm32-unknown-unknown/release/corner_turret_signed.wasm ./NPC/kode-frieze/target/wasm32-unknown-unknown/release/kode_frieze_s.wasm ./NPC/deploy-jenkins/target/wasm32-unknown-unknown/release/deeploy_jenkinns_s.wasm ./NPC/boylur-plait/target/wasm32-unknown-unknown/release/boylur_plait_s.wasm ./NPC/sir-emony/target/wasm32-unknown-unknown/release/sir_emony_s.wasm
     - name: Append Release Zip (windows)
       if: ${{ startsWith(matrix.os, 'windows') }}
       run: zip -j wasmdome-devkit-${{ matrix.os }}.zip ./wasmdome/target/release/wasmdome.exe ./engine-provider/target/release/engine_provider.dll
