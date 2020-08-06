@@ -28,7 +28,7 @@ bench:
 
 build:
 	@$(CARGO) build
-	wascap sign $(DEBUG)/sir_emony.wasm $(DEBUG)/sir_emony_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "sir_emony Mech"
+	wascap sign $(DEBUG)/sir_emony.wasm $(DEBUG)/sir_emony_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Sir Emony" -t npc -t avatar-siremony
 
 check:
 	@$(CARGO) check
@@ -47,7 +47,7 @@ update:
 
 release:
 	@$(CARGO) build --release
-	wascap sign $(RELEASE)/sir_emony.wasm $(RELEASE)/sir_emony_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "sir_emony Mech"
+	wascap sign $(RELEASE)/sir_emony.wasm $(RELEASE)/sir_emony_s.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Sir Emony" -t npc -t avatar-siremony
 	
 keys: keys-account
 keys: keys-module
