@@ -128,3 +128,7 @@ Then you can use the above wasmdome run command to run the match. See if your me
 To compete in the online WasmDome arena, you'll want to register at [wasmdome.dev](https://wasmdome.dev). Follow the instructions online and once a match is coming up soon, you'll be able to use the `wasmdome` CLI to claim a set of credentials that you can use to tell your NATS server to run as a _leaf node_ connected to the live, public lattice where the matches take place. You'll be able to see your mech appear in the lobby as soon as you join the public lattice.
 
 [![Assembly Mechs: Beyond Wasmdome Online Tutorial](http://img.youtube.com/vi/PBQ1tyeXrCA/0.jpg)](http://www.youtube.com/watch?v=PBQ1tyeXrCA "Assembly Mechs: Beyond Wasmdome Online Tutorial")
+
+## Wasmdome Match
+Get ready to compete! Here's a short match with our NPCs and some of our sample players.
+![Sample Match](https://github.com/wascc/wasmdome/blob/master/wasmdome_match.gif)
