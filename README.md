@@ -130,3 +130,90 @@ Then you can use the above wasmdome run command to run the match. See if your me
 To compete in the online WasmDome arena, you'll want to register at [wasmdome.dev](https://wasmdome.dev). Follow the instructions online and once a match is coming up soon, you'll be able to use the `wasmdome` CLI to claim a set of credentials that you can use to tell your NATS server to run as a _leaf node_ connected to the live, public lattice where the matches take place. You'll be able to see your mech appear in the lobby as soon as you join the public lattice.
 
 [![Assembly Mechs: Beyond Wasmdome Online Tutorial](http://img.youtube.com/vi/PBQ1tyeXrCA/0.jpg)](http://www.youtube.com/watch?v=PBQ1tyeXrCA "Assembly Mechs: Beyond Wasmdome Online Tutorial")
+
+#### Competing Online text instructions
+Navigate to wasmdome.dev, click the login button in the top right, and login with your OAUTH provider of choice. Once you’ve logged in, you need to fill out your profile on the wasmdome website. This will require you to input your account token and display name.
+
+First we’ll start by generating your private key, and then an account JWT. You’ll use this account to sign your mechs so we can verify that the mechs you publish belong to you. Follow these steps to generate your JWT:
+
+```
+nk gen account
+# Take note of this public key and seed. Your seed is your private key, keep it somewhere safe
+echo “seed value from nk output” > demoaccount.nk
+wascap gen account -s demoaccount.nk -s demoaccount.nk --name “Your Account Name” > demoaccount.jwt
+```
+
+Now, you can navigate back to wasmdome.dev, back to your profile view by clicking on your avatar in the top right corner, and click the pencil in the top right of the window to edit your profile. You’ll want to take the contents of `demoaccount.jwt` and paste them into the “Account JWT” section, and set yourself a display name (this can be whatever you’d like)
+
+NOTE: When you join a wasmdome match, you will need to use this account seed to sign your mechs or they will not be allowed onto the site under your profile. This includes if you followed the offline steps above, you will need to replace the account.nk file with the one you’ve generated in this section.
+
+To join a wasmdome match, you first need to start a `nats-server` in leaf node mode so you can connect to our NATS node. You can do this with the following command (you’ll need the following two files for this to work):
+
+`domedemo.creds`
+This file can be downloaded from the #wasminthecloud channel in slack, if you’ve registered for the workshop you should have access to this file and can download it locally.
+
+`leaf.conf`
+```
+leafnodes {
+    remotes = [
+        {
+          url: "tls://connect.ngs.global"
+          credentials: “./domedemo.creds”
+        },
+    ]
+}
+```
+
+Then you can run the following command to connect:
+```
+nats-server -a 127.0.0.1 -c ./leaf.conf
+```
+
+Once this runs and you see a message like this you will have successfully connected:
+```
+[33700] 2020/08/05 20:22:30.621379 [INF] Server is ready
+[33700] 2020/08/05 20:22:30.845011 [INF] Connected leafnode to "connect.ngs.global:7422"
+```
+
+Now that you’re connected, you’re ready to load your actor into wasmdome! You’ll need your mech that you’d like to load in, and a config file that is configured to load in your mech.
+
+From the same directory as your cargo project that is your mech, you’ll need something like this file:
+```
+# your-mech.yaml
+---
+actors:
+    - ./target/wasm32-unknown-unknown/release/your_mech_s.wasm
+bindings:
+    - actor: "MCEWIJ5FUAOY2KKMQDQSP7QM4LS7TAU5CAPDQNG4AXJHLRPESSASB4HG"
+      capability: "wasmdome:engine"
+      values:
+capabilities: []
+```
+Here, you’ll need to change the actor path to where your mech is located (in the case where you built your cargo project for release, this would be the correct path for a mech called “your-mech”) as well as input your own actor’s module key. You can get this module key by running:
+
+```
+wascap caps /path/to/your_mech_s.wasm
+```
+And inspecting the `Module` section of the `wascap` output.
+
+With those prerequisites, you can then run
+```
+wascc-host --manifest your-mech.yaml
+```
+And you should view your mech join the website in the Arena lobby.
+
+The last thing you should do here is add in an avatar for your mech so it can be displayed on the website. Go ahead and edit the `Makefile` for your mech and fine the line that looks like this:
+```
+release:
+	@$(CARGO) build --release
+	wascap sign $(RELEASE)/corner_turret.wasm $(RELEASE)/corner_turret_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Turret"
+```
+
+And simply edit this to include a tag for the avatar of your choice. The syntax for this is appending a `-t avatar-bot-X`, like so:
+```
+release:
+	@$(CARGO) build --release
+	wascap sign $(RELEASE)/corner_turret.wasm $(RELEASE)/corner_turret_signed.wasm -i $(KEYDIR)/account.nk -u $(KEYDIR)/module.nk -c wasmdome:engine -n "Turret" -t avatar-bot-2
+```
+
+You can pick any avatar ranging from `bot-1` to `bot-8`, so find one you like! Once you’ve done that, run `make release` in your mech project again, and then repeat the `wascc-host` command from above with the `your-mech.yaml` manifest. Once you do that, if you tagged your mech correctly, you’ll be able to see your mech on the arena page along with your new shiny avatar.
