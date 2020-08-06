@@ -31,7 +31,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "deeploy-jennkins"
+name = "deeploy-jenkinns"
 version = "0.0.1"
 dependencies = [
  "serde",
