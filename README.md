@@ -62,7 +62,8 @@ Use cargo generate to create your mech:
 ```
 cargo generate --git https://github.com/wascc/new-mech-template.git
 cd your-mech
-cargo build
+make keys
+make release
 ```
 
 Use wascc-host to launch your engine-provider. The file extension will be dylib if you are on a mac.
@@ -80,7 +81,7 @@ You’re now ready to place your NPCs and mechs into the lattice. You can do thi
 # npc_only.yaml
 ---
 actors:
-  - ./turret_signed.wasm
+  - ./target/wasm32-unknown-unknown/release/your_mech_s.wasm
 bindings:
   - actor: "MCEWIJ5FUAOY2KKMQDQSP7QM4LS7TAU5CAPDQNG4AXJHLRPESSASB4HG"
    capability: "wasmdome:engine"
