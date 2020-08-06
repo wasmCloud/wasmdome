@@ -55,7 +55,13 @@ enum WasmdomeAction {
 }
 
 fn handle_command(cmd: CliCommand) -> std::result::Result<(), Box<dyn ::std::error::Error>> {
-    let nc = nats::connect("127.0.0.1")?; // Connect to the leaf node on loopback
+    let nc = match nats::connect("127.0.0.1") {
+        Err(_e) => {
+            println!("Couldn't connect to the lattice. Is NATS running?");
+            return Ok(());
+        }
+        Ok(v) => v,
+    };
     match cmd.action {
         WasmdomeAction::Schedule => check_schedule(nc)?,
         WasmdomeAction::Run {
@@ -74,9 +80,12 @@ fn check_schedule(nc: nats::Connection) -> Result<(), Box<dyn Error>> {
         std::time::Duration::from_millis(500),
     );
 
-    if let Err(e) = res {
-        println!("Error requesting schedule from the lattice: {}", e);
-        return Ok(());
+    match res {
+        Err(e) => {
+            println!("Error requesting schedule from the lattice: {}", e);
+            return Ok(());
+        }
+        _ => (),
     };
 
     let data = &res.unwrap().data;
