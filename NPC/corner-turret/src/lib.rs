@@ -37,9 +37,9 @@ fn closest_corner(mech: &impl MechInstruments) -> Option<GridDirection> {
     let vertical = if position.y == 0 || position.y == height {
         None
     } else if position.y < height - position.y {
-        Some(GridDirection::North)
-    } else {
         Some(GridDirection::South)
+    } else {
+        Some(GridDirection::North)
     };
 
     match (vertical, horizontal) {

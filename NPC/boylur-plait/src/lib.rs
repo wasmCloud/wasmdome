@@ -104,28 +104,48 @@ fn evasive_maneuvers(mech: &impl MechInstruments, gb: GameBoard) -> Vec<MechComm
      let pos = mech.position();
 
      if pos.x <= quarter_width && pos.y < 3 * quarter_height {
+          let diff_dir = if pos.x > 0 {
+               mech.move_mech(GridDirection::West)
+          } else {
+               mech.move_mech(GridDirection::North)
+          };
           vec![
                mech.move_mech(GridDirection::North),
-               mech.move_mech(GridDirection::North),
-               mech.move_mech(GridDirection::East)
+               diff_dir,
+               mech.move_mech(GridDirection::North)
           ]
      } else if pos.x < 3 * quarter_width && pos.y >= 3 * quarter_height {
+          let diff_dir = if pos.y < gb.height as i32 - 1 {
+               mech.move_mech(GridDirection::North)
+          } else {
+               mech.move_mech(GridDirection::East)
+          };
           vec![
                mech.move_mech(GridDirection::East),
-               mech.move_mech(GridDirection::East),
-               mech.move_mech(GridDirection::South)
+               diff_dir,
+               mech.move_mech(GridDirection::East)
           ]
      } else if pos.x >= 3 * quarter_width && pos.y >= quarter_height {
+          let diff_dir = if pos.x < gb.width as i32 - 1 {
+               mech.move_mech(GridDirection::East)
+          } else {
+               mech.move_mech(GridDirection::South)
+          };
           vec![
                mech.move_mech(GridDirection::South),
-               mech.move_mech(GridDirection::South),
-               mech.move_mech(GridDirection::West)
+               diff_dir,
+               mech.move_mech(GridDirection::South)
           ]
      } else {
+          let diff_dir = if pos.x > 0 {
+               mech.move_mech(GridDirection::South)
+          } else {
+               mech.move_mech(GridDirection::West)
+          };
           vec![
                mech.move_mech(GridDirection::West),
-               mech.move_mech(GridDirection::West),
-               mech.move_mech(GridDirection::North)
+               diff_dir,
+               mech.move_mech(GridDirection::West)
           ]
      }
 }
