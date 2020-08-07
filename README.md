@@ -84,8 +84,8 @@ actors:
   - ./target/wasm32-unknown-unknown/release/your_mech_s.wasm
 bindings:
   - actor: "MCEWIJ5FUAOY2KKMQDQSP7QM4LS7TAU5CAPDQNG4AXJHLRPESSASB4HG"
-   capability: "wasmdome:engine"
-   values:
+    capability: "wasmdome:engine"
+    values:
 capabilities: []
 ```
 And then run the following command to schedule your mechs
@@ -114,13 +114,14 @@ actors:
   - ./your-mech/target/wasm32-unknown-unknown/release/your_mech_s.wasm
 bindings:
   - actor: "MCEWIJ5FUAOY2KKMQDQSP7QM4LS7TAU5CAPDQNG4AXJHLRPESSASB4HG"
-   capability: "wasmdome:engine"
-   values:
+    capability: "wasmdome:engine"
+    values:
   - actor: "YOUR_MECH_MODULE"
-   capability: "wasmdome:engine"
-   values:
+    capability: "wasmdome:engine"
+    values:
 capabilities: []
 ```
+
 ```
 wascc-host --manifest npc_only.yaml
 ```
@@ -140,8 +141,8 @@ First we’ll start by generating your private key, and then an account JWT. You
 ```
 nk gen account
 # Take note of this public key and seed. Your seed is your private key, keep it somewhere safe
-echo “seed value from nk output” > demoaccount.nk
-wascap gen account -s demoaccount.nk -s demoaccount.nk --name “Your Account Name” > demoaccount.jwt
+echo "seed value from nk output" > demoaccount.nk
+wascap gen account -s demoaccount.nk -s demoaccount.nk --name "Your Account Name" > demoaccount.jwt
 ```
 
 Now, you can navigate back to wasmdome.dev, back to your profile view by clicking on your avatar in the top right corner, and click the pencil in the top right of the window to edit your profile. You’ll want to take the contents of `demoaccount.jwt` and paste them into the “Account JWT” section, and set yourself a display name (this can be whatever you’d like)
@@ -159,7 +160,7 @@ leafnodes {
     remotes = [
         {
           url: "tls://connect.ngs.global"
-          credentials: “./domedemo.creds”
+          credentials: "./domedemo.creds"
         },
     ]
 }
